@@ -400,7 +400,7 @@ export function downloadTracks(indexes: number[]) {
                     batchActions([
                         recordDialogAction.setVisible(false),
                         errorDialogAction.setVisible(true),
-                        errorDialogAction.setErrorMessage(`Download failed. Are you using a disc recorded by SonicStage?`),
+                        errorDialogAction.setErrorMessage(`Download failed. Either Chrome's permissions might prevent multiple\ndownloads in sequence, or are you using a disc recorded by SonicStage?\nThus, please reset permissions, clear cookies, reboot browser \u0026 try again.\n(It might also help to only download one track after the other for MZ-RH1 owners.)`),
                     ])
                 );
             }
