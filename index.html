@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="canonical" href="https://stefano.brilli.me/webminidisc" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Bring back to life your old NetMD MiniDisc player. Upload music to MiniDisc from the Browser."
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/MiniDisc192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>Web MiniDisc Pro - Brings NetMD Devices to the Web</title>
+  </head>
+  <body>
+    <script>
+    try {
+      if (location.protocol !== 'file:' && location.protocol !== 'https:' && !location.host.match(/^localhost/gm)) {
+        // Make sure we're on https/file, or WebUSB won't work.
+        location.replace(`https:${location.href.substring(location.protocol.length)}`);
+        console.log('Redirecting to https....');
+      }
+    } catch (err) {
+      console.log(err)
+    }
+    </script>
+    <center>
+    <style>
+    a.altlnk:link {
+    	color:grey;
+    	text-decoration:none
+    }
+    a.altlnk:hover {
+    	color:grey;
+    	text-decoration:underline
+    }
+    a.altlnk:visited {
+    	color:grey;
+    	text-decoration:none
+    }
+    </style>
+    <h1>Disclaimer:</h1>
+    this version is under visual construction, if you experience 
+    </br>
+    any isuses, please visit the version up at: 
+    <a class="altlnk" href="https://web.minidisc.wiki">web.minidisc.wiki</a>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    </center>
+    <div id="root"></div>
+
+  </body>
+</html>
