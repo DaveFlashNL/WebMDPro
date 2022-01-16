@@ -63,7 +63,7 @@ After a quick inspection to the source code I realized the project could be easi
 
 That's it. It was a LOT of fun :).
 
-### Some OSS I've used
+### Some OSS used:
 - [FFmpeg](https://www.ffmpeg.org/) and [ffmpegjs](https://github.com/ffmpegjs/FFmpeg), to read audio files (wav, mp3, ogg, mp4, etc...).
 - [Atracdenc](https://github.com/dcherednik/atracdenc/), to support atrac3 encoding (lp2, lp4 audio formats).
 - [Emscripten](https://emscripten.org/), to run both FFmpeg and Atracdenc in the browser.
