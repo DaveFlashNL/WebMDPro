@@ -109,7 +109,7 @@ export const UploadDialog = (props: {}) => {
             aria-labelledby="alert-dialog-slide-title"
             aria-describedby="alert-dialog-slide-description"
         >
-            <DialogTitle id="alert-dialog-slide-title">Recording or downloading...</DialogTitle>
+            <DialogTitle id="alert-dialog-slide-title">Processing...</DialogTitle>
             <DialogContent>
                 <DialogContentText id="alert-dialog-slide-description">
                     {convertedValue === 100 && trackConverting === trackTotal
