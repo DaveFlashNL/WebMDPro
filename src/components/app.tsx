@@ -129,8 +129,8 @@ const App = () => {
                             DaveFlash
                         </Link>{'. All rights reserved. © ddMedia | DaveFlash '}
                         {new Date().getFullYear()}
-                        {'.'}
-                    </Typography>
+                        {'.'}<br/>
+                        {'(v0.3.0 ~ c2bb167f)'}
                     </Typography>
                 </main>
 

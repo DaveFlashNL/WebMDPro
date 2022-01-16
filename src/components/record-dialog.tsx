@@ -58,7 +58,7 @@ export const RecordDialog = (props: {}) => {
             aria-labelledby="record-dialog-slide-title"
             aria-describedby="record-dialog-slide-description"
         >
-            <DialogTitle id="record-dialog-slide-title">Recording...</DialogTitle>
+            <DialogTitle id="record-dialog-slide-title">Recording or downloading...</DialogTitle>
             <DialogContent>
                 <DialogContentText id="record-dialog-slide-description">
                     {`Recording track ${trackDone + 1} of ${trackTotal}: ${titleCurrent}`}
