@@ -1,18 +1,18 @@
-# Web MiniDisc Pro
-
-*Brings NetMD Devices to the Web* - just with more features this time
-
+# Web MiniDisc Pro*
+(*mostly visually oriented fork by ddM/DaveFlash)<br/>
+*Brings NetMD Devices to the Web*
 ### Differences between [Web Minidisc](https://github.com/cybercase/webminidisc) and Web Minidisc Pro
-As per the request of the original creator of Web Minidisc, I will implement all my further changes
-in this fork.
+As per request of the original creator, all future changes by Asivery will be implemented on his [fork](https://github.com/asivery/webminidisc), and subsequently mirrored</br> to this fork, while here, I, DaveFlash, as a webdeveloper, will focus mainly on the UI/UX side of things and less on the technical.
+
 For now the extra features of Web Minidisc Pro are:
 - The ability to connect to NetMD units available on the local network with the help of [Remote NetMD](https://github.com/asivery/remote-netmd-server)
 - Downloading tracks straight from the player via NetMD (only for Sony MZ-RH1 users)
 But there are more features on the way.
 
-Live @ [https://web.minidisc.wiki/](https://web.minidisc.wiki/).</br>
-How it works @ [https://www.youtube.com/watch?v=Frs8qhw0g9Y](https://www.youtube.com/watch?v=Frs8qhw0g9Y).</br>
-Blogpost @ [https://stefano.brilli.me/blog/web-minidisc/](https://stefano.brilli.me/blog/web-minidisc/)
+Live @ [webmdpro.ddw.nu](https://webmdpro.ddw.nu)</br>
+and @ [web.minidisc.wiki](https://web.minidisc.wiki)</br>
+How it works @ [https://www.youtube.com/watch?v=Frs8qhw0g9Y](https://www.youtube.com/watch?v=Frs8qhw0g9Y)</br>
+Blogpost @ [https://stefano.brilli.me/blog/web-minidisc](https://stefano.brilli.me/blog/web-minidisc)
 
 Requires *Chrome* or any other browser that supports both **WASM** and **WebUSB**
 
