@@ -3,6 +3,7 @@
 *Brings NetMD Devices to the Web*
 ### Differences between [Web Minidisc](https://github.com/cybercase/webminidisc) and Web Minidisc Pro
 As per request of the original creator, all future changes by Asivery will be implemented on his [fork](https://github.com/asivery/webminidisc), and subsequently mirrored to this fork, while here, I, DaveFlash, as a webdeveloper, will focus mainly on the UI/UX side of things and less on the technical.
+(parts of this README are written by others from their perspectives as this is a fork of off another fork, unless stated as written by this repo's owner, me DaveFlash)
 
 For now the extra features of Web Minidisc Pro are:
 - The ability to connect to NetMD units available on the local network with the help of [Remote NetMD](https://github.com/asivery/remote-netmd-server)
