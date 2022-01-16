@@ -116,14 +116,21 @@ const App = () => {
                     </Paper>
                     <Typography variant="body2" color="textSecondary" className={classes.copyrightTypography}>
                         {'© '}
-                        <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://stefano.brilli.me/">
+                        <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://stefano.brilli.me">
                             Stefano Brilli
-                        </Link>{', '}
-                        <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://github.com/asivery/">
+                        </Link>{' (original), this fork by: '}
+                        <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://github.com/asivery">
                             Asivery
-                        </Link>{' '}
+                        </Link>{' and proudly hosted on'}<br/>
+                        <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://www.servage.net">
+                            Servage
+                        </Link>{' by '}
+                        <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://twitter.com/DaveFlash">
+                            DaveFlash
+                        </Link>{'. All rights reserved. © ddMedia | DaveFlash '}
                         {new Date().getFullYear()}
                         {'.'}
+                    </Typography>
                     </Typography>
                 </main>
 
