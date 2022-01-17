@@ -147,7 +147,7 @@ export const UploadDialog = (props: {}) => {
                 ) : null}
                 <div className={classes.spacer}></div>
                 <Button disabled={cancelled} onClick={handleCancelUpload}>
-                    {cancelled ? `Stopping after current track...` : `Cancel Recording`}
+                    {cancelled ? `Stopping after current track...` : `Cancel`}
                 </Button>
             </DialogActions>
         </Dialog>
