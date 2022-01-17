@@ -146,10 +146,10 @@ export const AboutDialog = (props: {}) => {
                     <DialogContentText>Disclaimers:</DialogContentText>
                     <ul className={classes.nobul}>
                         <li>
-                            This version is under visual construction, if you experience<br />
-                            any issues, please visit the version up at:{' '}
+                            TThis version is under visual construction, if you experience any <br />
+                            issues, please visit the main version:{' '}
                             <Link rel="noopener noreferrer" href="https://web.minidisc.wiki" target="_blank">
-                                web.minidisc.wiki
+                                https://web.minidisc.wiki
                             </Link>
                         </li>
                     </ul>
