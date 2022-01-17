@@ -15,25 +15,6 @@ div {
 h1 {
     text-align: center;
 }
-sup {
-	font-size: 8px;
-}
-sub {
-	font-size: 8px;
-    vertical-align: top;
-}
-a.altlnk:link {
-    color:grey;
-    text-decoration:none
-}
-a.altlnk:hover {
-    color:grey;
-    text-decoration:underline
-}
-a.altlnk:visited {
-    color:grey;
-    text-decoration:none
-}
-ul.nobul {
-    list-style-type: none;
+h1.sup {
+	font-size: px;
 }
