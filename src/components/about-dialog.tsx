@@ -31,7 +31,7 @@ const useStyles = makeStyles(theme => ({
             color: '#909090',
         },
         '& a:hover': {
-            textDecoration: 'none',
+            textDecoration: 'underline',
             color: '#222222',
         },
         '& a:visited': {
