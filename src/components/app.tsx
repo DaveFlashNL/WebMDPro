@@ -65,9 +65,6 @@ const useStyles = (props: { showsList: boolean }) =>
                 textDecoration: 'underline',
                 color: '#222222',
             },
-            '& sup': {
-                fontSize: '9px',
-            },
             '& sub': {
                 fontSize: '8px',
                 verticalAlign: 'top',
