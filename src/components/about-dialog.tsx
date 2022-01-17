@@ -39,6 +39,10 @@ const useStyles = makeStyles(theme => ({
             color: '#7e7e7e',
         },
     },
+    nobul: {
+        listStyle: 'none',
+
+    },
 }));
 
 export const AboutDialog = (props: {}) => {
@@ -139,11 +143,11 @@ export const AboutDialog = (props: {}) => {
                     </li>
                 </ul>
                 <DialogContentText>Disclaimers:</DialogContentText>
-                <ul className="nobul">
-                    <li>
+                <ul className={classes.listref}>
+                    <li className={classes.nobul}>
                         This version is under visual construction, if you experience<br />{'\n'}
                         any issues, please visit the version up at:{' '}
-                        <Link rel="noopener noreferrer" href="https://web.minidisc.wiki" target="_blank" className={'nobul'}>
+                        <Link rel="noopener noreferrer" href="https://web.minidisc.wiki" target="_blank">
                             web.minidisc.wiki
                         </Link>
                     </li>
