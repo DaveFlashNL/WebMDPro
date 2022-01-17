@@ -68,6 +68,10 @@ export const ChangelogDialog = (props: {}) => {
 
     const content = (
         <React.Fragment>
+            <h2 className={classes.header}>Version 0.3.1</h2>
+            <ul className={classes.list}>
+                <li>Fixed a bug preventing tracks to be transferred to pc when a write-protected disc was inserted in the Sony MZ-RH1</li>
+            </ul>
             <h2 className={classes.header}>Version 0.3.0</h2>
             <ul className={classes.list}>
                 <li>
