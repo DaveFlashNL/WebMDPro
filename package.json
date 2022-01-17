@@ -61,11 +61,6 @@
       "last 2 chrome version"
     ]
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
   "lint-staged": {
     "src/**/*.{js,jsx,ts,tsx,json,scss,md}": [
       "prettier --check"
