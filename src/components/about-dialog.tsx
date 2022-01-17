@@ -118,6 +118,9 @@ export const AboutDialog = (props: {}) => {
                         </Link>
                     </li>
                 </ul>
+                <DialogContentText>Legal disclaimer:</DialogContentText>
+                <text>This live version is primarily built from the source of Asivery's Github-repo and includes technical updates by Asivery &amp; others to the existing core of Stefano Brilli's original authentic work, for the express purpose of extending it with functionalities that permit among other things correct operation in combination with the Sony MZ-RH1 for transferring audio tracks back to the pc as well as overall stability enhancements for all other compatible NetMD players/recorders. While the repo I, DaveFlash, as a webdesigner, maintain for this live version will only include the needed additional superficial enhancements to wordings, dialogs, UI/UX, look-and-feel and the underlying html and css code for the purpose of making it more user-friendly for everyone, the technical side of things is explicitly outside of my purview. Links to all authors of this software are included in the copyright text on the bottom of the page.</text>
+
             </DialogContent>
             <DialogActions>
                 <Button onClick={handleClose}>Close</Button>

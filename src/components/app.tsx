@@ -121,16 +121,19 @@ const App = () => {
                         </Link>{' (original), this fork by: '}
                         <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://github.com/asivery">
                             Asivery
-                        </Link>{' and proudly hosted on'}<br/>
+                        </Link>{' \& '}
+                        <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://github.com/DaveFlashNL/WebMDPro">
+                            me
+                        </Link>{', proudly hosted on'}<br/>
                         <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://www.servage.net">
-                            Servage
-                        </Link>{' by '}
+                            ServageOne
+                        </Link>{' in the EU. All rights reserved. © ddMedia | '}
                         <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://twitter.com/DaveFlash">
                             DaveFlash
-                        </Link>{'. All rights reserved. © ddMedia | DaveFlash '}
+                        </Link>{' '}
                         {new Date().getFullYear()}
                         {'.'}<br/>
-                        {'(v0.3.0 ~ c2bb167f)'}
+                        {'(v0.3.0 ~ 5f57873e)'}
                     </Typography>
                 </main>
 
