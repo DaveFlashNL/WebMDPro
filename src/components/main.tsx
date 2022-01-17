@@ -97,13 +97,13 @@ const useStyles = makeStyles(theme => ({
     toolbarHighlight:
         theme.palette.type === 'light'
             ? {
-                  color: theme.palette.secondary.main,
-                  backgroundColor: lighten(theme.palette.secondary.light, 0.85),
-              }
+                color: theme.palette.secondary.main,
+                backgroundColor: lighten(theme.palette.secondary.light, 0.85),
+            }
             : {
-                  color: theme.palette.text.primary,
-                  backgroundColor: theme.palette.secondary.dark,
-              },
+                color: theme.palette.text.primary,
+                backgroundColor: theme.palette.secondary.dark,
+            },
     headBox: {
         display: 'flex',
         justifyContent: 'space-between',
@@ -454,7 +454,7 @@ export const Main = (props: {}) => {
 
                 {selectedCount > 0 ? (
                     <Tooltip title="Delete">
-                        <IconButton aria-label="delete" onClick={handleDeleteSelected}>
+                        <IconButton aria-label="delete" disabled={!isCapable(Capability.metadataEdit)} onClick={handleDeleteSelected}>
                             <DeleteIcon />
                         </IconButton>
                     </Tooltip>
@@ -462,7 +462,7 @@ export const Main = (props: {}) => {
 
                 {selectedCount > 0 ? (
                     <Tooltip title={canGroup ? 'Group' : ''}>
-                        <IconButton aria-label="group" disabled={!canGroup} onClick={handleGroupTracks}>
+                        <IconButton aria-label="group" disabled={!canGroup || !isCapable(Capability.metadataEdit)} onClick={handleGroupTracks}>
                             <CreateNewFolderIcon />
                         </IconButton>
                     </Tooltip>
@@ -470,7 +470,7 @@ export const Main = (props: {}) => {
 
                 {selectedCount > 0 ? (
                     <Tooltip title="Rename">
-                        <IconButton aria-label="rename" disabled={selectedCount !== 1} onClick={handleRenameActionClick}>
+                        <IconButton aria-label="rename" disabled={selectedCount !== 1 || !isCapable(Capability.metadataEdit)} onClick={handleRenameActionClick}>
                             <EditIcon />
                         </IconButton>
                     </Tooltip>
