@@ -118,7 +118,7 @@ const App = () => {
                         {'© '}
                         <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://stefano.brilli.me">
                             Stefano Brilli
-                        </Link>{' (original), this fork by: '}
+                        </Link>{' (original), this fork by '}
                         <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://github.com/asivery">
                             Asivery
                         </Link>{' \& '}

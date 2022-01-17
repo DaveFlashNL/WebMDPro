@@ -43,6 +43,10 @@ const useStyles = makeStyles(theme => ({
     },
     list: {
         marginTop: 0,
+        '& a': {
+            textDecoration: 'none',
+            color: 'gray',
+        },
     },
 }));
 
