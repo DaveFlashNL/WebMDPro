@@ -12,6 +12,7 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import Typography from '@material-ui/core/Typography';
 import Slide from '@material-ui/core/Slide';
 import Button from '@material-ui/core/Button';
+import { makeStyles } from '@material-ui/core/styles';
 import Link from '@material-ui/core/Link';
 import { TransitionProps } from '@material-ui/core/transitions';
 import { W95AboutDialog } from './win95/about-dialog';
@@ -23,8 +24,26 @@ const Transition = React.forwardRef(function Transition(
     return <Slide direction="up" ref={ref} {...props} />;
 });
 
+const useStyles = makeStyles(theme => ({
+    listref: {
+        '& a': {
+            textDecoration: 'underline',
+            color: '#909090',
+        },
+        '& a:hover': {
+            textDecoration: 'none',
+            color: '#222222',
+        },
+        '& a:visited': {
+            textDecoration: 'underline',
+            color: '#7e7e7e',
+        },
+    },
+}));
+
 export const AboutDialog = (props: {}) => {
     const dispatch = useDispatch();
+    const classes = useStyles();
 
     let visible = useShallowEqualSelector(state => state.appState.aboutDialogVisible);
     const vintageMode = useShallowEqualSelector(state => state.appState.vintageMode);
@@ -52,7 +71,7 @@ export const AboutDialog = (props: {}) => {
             <DialogTitle id="about-dialog-slide-title">About Web MiniDisc Pro</DialogTitle>
             <DialogContent>
                 <DialogContentText>Web MiniDisc Pro uses</DialogContentText>
-                <ul>
+                <ul className={classes.listref}>
                     <li>
                         <Link rel="noopener noreferrer" href="https://www.ffmpeg.org/" target="_blank">
                             FFmpeg
@@ -101,7 +120,7 @@ export const AboutDialog = (props: {}) => {
                     </li>
                 </ul>
                 <DialogContentText>Attribution</DialogContentText>
-                <ul>
+                <ul className={classes.listref}>
                     <li>
                         MiniDisc logo from{' '}
                         <Link rel="noopener noreferrer" href="https://en.wikipedia.org/wiki/MiniDisc" target="_blank">
@@ -124,7 +143,7 @@ export const AboutDialog = (props: {}) => {
                     <li>
                         This version is under visual construction, if you experience<br />{'\n'}
                         any issues, please visit the version up at:{' '}
-                        <Link rel="noopener noreferrer" href="https://web.minidisc.wiki" target="_blank" className="altlnk">
+                        <Link rel="noopener noreferrer" href="https://web.minidisc.wiki" target="_blank" className={'nobul'}>
                             web.minidisc.wiki
                         </Link>
                     </li>

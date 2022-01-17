@@ -57,6 +57,21 @@ const useStyles = (props: { showsList: boolean }) =>
         },
         copyrightTypography: {
             textAlign: 'center',
+            '& a': {
+                textDecoration: 'none',
+                color: '#909090',
+            },
+            '& a:hover': {
+                textDecoration: 'underline',
+                color: '#222222',
+            },
+            '& sup': {
+                fontSize: '9px',
+            },
+            '& sub': {
+                fontSize: '8px',
+                verticalAlign: 'top',
+            },
         },
         backdrop: {
             zIndex: theme.zIndex.drawer + 1,
@@ -116,24 +131,24 @@ const App = () => {
                     </Paper>
                     <Typography variant="body2" color="textSecondary" className={classes.copyrightTypography}>
                         {'© '}
-                        <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://stefano.brilli.me">
+                        <Link rel="noopener noreferrer" target="_blank" href="https://stefano.brilli.me">
                             Stefano Brilli
                         </Link>{' (original), this fork by '}
-                        <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://github.com/asivery">
+                        <Link rel="noopener noreferrer" target="_blank" href="https://github.com/asivery">
                             Asivery
                         </Link>{' \& '}
-                        <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://github.com/DaveFlashNL/WebMDPro">
+                        <Link rel="noopener noreferrer" target="_blank" href="https://github.com/DaveFlashNL/WebMDPro">
                             me
                         </Link>{', proudly hosted on'}<br />
-                        <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://www.servage.net">
+                        <Link rel="noopener noreferrer" target="_blank" href="https://www.servage.net">
                             ServageOne
                         </Link>{' in the EU. All rights reserved. © ddMedia | '}
-                        <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://twitter.com/DaveFlash">
+                        <Link rel="noopener noreferrer" target="_blank" href="https://twitter.com/DaveFlash">
                             DaveFlash
                         </Link>{' '}
                         {new Date().getFullYear()}
                         {'.'}<br /><br />
-                        {'(v0.3.0 ~ da1ce82b)'}<br />
+                        {'(v0.3.0 ~ b84112b0)'}<br />
                         <sub>{'*Disclaimers moved to about box'}</sub>
                     </Typography>
                 </main>
