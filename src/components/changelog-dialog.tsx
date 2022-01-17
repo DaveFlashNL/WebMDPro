@@ -44,8 +44,12 @@ const useStyles = makeStyles(theme => ({
     list: {
         marginTop: 0,
         '& a': {
-            textDecoration: 'none',
+            textDecoration: 'underline',
             color: 'gray',
+        },
+        '& a:hover': {
+            textDecoration: 'underline',
+            color: '#9F9FA0',
         },
     },
 }));
