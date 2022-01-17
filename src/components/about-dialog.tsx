@@ -9,6 +9,7 @@ import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
+import Typography from '@material-ui/core/Typography';
 import Slide from '@material-ui/core/Slide';
 import Button from '@material-ui/core/Button';
 import Link from '@material-ui/core/Link';
@@ -118,11 +119,18 @@ export const AboutDialog = (props: {}) => {
                         </Link>
                     </li>
                 </ul>
-                <DialogContentText>Legal disclaimer:</DialogContentText>
-                <text>This live version is primarily built from the source of Asivery's Github-repo and includes technical updates by Asivery &amp; others to the existing core of Stefano Brilli's original authentic work, for the express purpose of extending it with functionalities that permit among other things correct operation in combination with the Sony MZ-RH1 for transferring audio tracks back to the pc as well as overall stability enhancements for all other compatible NetMD players/recorders. While the repo I, DaveFlash, as a webdesigner, maintain for this live version will only include the needed additional superficial enhancements to wordings, dialogs, UI/UX, look-and-feel and the underlying html and css code for the purpose of making it more user-friendly for everyone, the technical side of things is explicitly outside of my purview. Links to all authors of this software are included in the copyright text on the bottom of the page.</text>
-
-            </DialogContent>
-            <DialogActions>
+                <DialogContentText>Disclaimers:</DialogContentText>
+                <ul className="nobul">
+                    <li>
+                        This version is under visual construction, if you experience<br />{'\n'}
+                        any issues, please visit the version up at:{' '}
+                        <Link rel="noopener noreferrer" href="https://web.minidisc.wiki" target="_blank" className="altlnk">
+                            web.minidisc.wiki
+                        </Link>
+                    </li>
+                </ul>
+                <Typography>This live version is primarily built from the source of Asivery's Github-repo and includes technical updates by Asivery &amp; others to the existing core of Stefano Brilli's original authentic work, for the express purpose of extending it with functionalities that permit among other things correct operation in combination with the Sony MZ-RH1 for transferring audio tracks back to the pc as well as overall stability enhancements for all other compatible NetMD players/recorders.<br /><br />While the repo I, DaveFlash, as a webdesigner, maintain for this live version will only include the needed additional superficial enhancements to wordings, dialogs, UI/UX, look-and-feel and the underlying html and css code for the purpose of making it more user-friendly for everyone, the technical side of things is explicitly outside of my purview. Links to all authors of this software are included in the copyright text on the bottom of the page.</Typography>
+            </DialogContent><DialogActions>
                 <Button onClick={handleClose}>Close</Button>
             </DialogActions>
         </Dialog>

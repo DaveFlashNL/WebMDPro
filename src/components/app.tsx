@@ -124,7 +124,7 @@ const App = () => {
                         </Link>{' \& '}
                         <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://github.com/DaveFlashNL/WebMDPro">
                             me
-                        </Link>{', proudly hosted on'}<br/>
+                        </Link>{', proudly hosted on'}<br />
                         <Link rel="noopener noreferrer" color="inherit" target="_blank" href="https://www.servage.net">
                             ServageOne
                         </Link>{' in the EU. All rights reserved. © ddMedia | '}
@@ -132,8 +132,9 @@ const App = () => {
                             DaveFlash
                         </Link>{' '}
                         {new Date().getFullYear()}
-                        {'.'}<br/>
-                        {'(v0.3.0 ~ 5f57873e)'}
+                        {'.'}<br /><br />
+                        {'(v0.3.0 ~ 5f57873e)'}<br />
+                        <sub>{'*Disclaimers moved to about box'}</sub>
                     </Typography>
                 </main>
 
