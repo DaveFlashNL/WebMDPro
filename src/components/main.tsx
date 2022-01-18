@@ -444,7 +444,7 @@ export const Main = (props: {}) => {
                 )}
                 {selectedCount > 0 ? (
                     <React.Fragment>
-                        <Tooltip title="Record from MD">
+                        <Tooltip title={isCapable(Capability.trackDownload) ? 'Download from MD' : 'Record from MD'}>
                             <Button aria-label={isCapable(Capability.trackDownload) ? 'Download' : 'Record'} onClick={handleShowDumpDialog}>
                                 {isCapable(Capability.trackDownload) ? 'Download' : 'Record'}
                             </Button>
