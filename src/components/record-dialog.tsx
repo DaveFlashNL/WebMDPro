@@ -12,6 +12,7 @@ import Box from '@material-ui/core/Box';
 import { makeStyles } from '@material-ui/core/styles';
 import { TransitionProps } from '@material-ui/core/transitions';
 import { W95RecordDialog } from './win95/record-dialog';
+import { Capability } from '../services/netmd';
 
 const useStyles = makeStyles(theme => ({
     progressPerc: {
@@ -31,6 +32,8 @@ const Transition = React.forwardRef(function Transition(
 
 export const RecordDialog = (props: {}) => {
     const classes = useStyles();
+    const deviceCapabilities = useShallowEqualSelector(state => state.main.deviceCapabilities);
+    const isCapable = (capability: Capability) => deviceCapabilities.includes(capability);
 
     let { visible, trackTotal, trackDone, trackCurrent, titleCurrent } = useShallowEqualSelector(state => state.recordDialog);
 
@@ -58,10 +61,10 @@ export const RecordDialog = (props: {}) => {
             aria-labelledby="record-dialog-slide-title"
             aria-describedby="record-dialog-slide-description"
         >
-            <DialogTitle id="record-dialog-slide-title">Recording or downloading...</DialogTitle>
+            <DialogTitle id="record-dialog-slide-title">{isCapable(Capability.trackDownload) ? 'Downloading...' : 'Recording...'}</DialogTitle>
             <DialogContent>
                 <DialogContentText id="record-dialog-slide-description">
-                    {`Recording track ${trackDone + 1} of ${trackTotal}: ${titleCurrent}`}
+                    {`${isCapable(Capability.trackDownload) ? 'Downloading' : 'Recording'} track ${trackDone + 1} of ${trackTotal}: ${titleCurrent}`}
                 </DialogContentText>
                 <LinearProgress
                     className={classes.progressBar}
