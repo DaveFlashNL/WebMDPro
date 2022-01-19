@@ -145,7 +145,7 @@ const App = () => {
                         </Link>{' '}
                         {new Date().getFullYear()}
                         {'.'}<br /><br />
-                        {'(v0.3.0 ~ 7f4cc4a1)'}<br />
+                        {'(v0.3.1 ~ ba245ec3)'}<br />
                         <sub>{'*Disclaimers moved to about box'}</sub>
                     </Typography>
                 </main>
