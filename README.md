@@ -1,4 +1,4 @@
-# Web MiniDisc Pro (dev)*
+# Web MiniDisc Pro*
 (*mostly visually oriented fork by ddM/DaveFlash)<br/>
 *Brings NetMD Devices to the Web*
 
