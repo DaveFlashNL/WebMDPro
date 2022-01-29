@@ -1,9 +1,6 @@
-# Web MiniDisc Pro (dev)*
+# Web MiniDisc Pro*
 (*mostly visually oriented fork by ddM/DaveFlash)<br/>
 *Brings NetMD Devices to the Web*
-
-DEVELOPER BRANCH DISCLAIMER:
-README'S WILL NO LONGER BE MAINTANED IN THIS REPO, please see https://github.com/DaveFlashNL/WebMDPro-pub for the public repo.
 
 ### Differences between [Web Minidisc](https://github.com/cybercase/webminidisc) and Web Minidisc Pro
 As per request of the original creator, all future changes by Asivery will be implemented on his [fork](https://github.com/asivery/webminidisc), and subsequently mirrored to this fork, while here, I, DaveFlash, as a webdeveloper, will focus mainly on the UI/UX side of things and less on the technical.
