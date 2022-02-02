@@ -1,6 +1,6 @@
 {
   "name": "webmd-pro",
-  "version": "3.0.1b",
+  "version": "3.0.1c",
   "private": false,
   "dependencies": {
     "@ffmpeg/ffmpeg": "0.6.1",

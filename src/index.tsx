@@ -26,7 +26,7 @@ serviceRegistry.mediaRecorderService = new MediaRecorderService();
 serviceRegistry.mediaSessionService = new BrowserMediaSessionService(store);
 
 Object.defineProperty(window, 'wmdVersion', {
-    value: '0.2.4',
+    value: '3.0.1',
     writable: false,
 });
 
@@ -45,7 +45,7 @@ if (localStorage.getItem('version') !== (window as any).wmdVersion) {
     });
 
     if (navigator && navigator.usb) {
-        navigator.usb.ondisconnect = function() {
+        navigator.usb.ondisconnect = function () {
             store.dispatch(appActions.setMainView('WELCOME'));
         };
     } else {
@@ -88,7 +88,7 @@ if (localStorage.getItem('version') !== (window as any).wmdVersion) {
         );
     }
 
-    store.subscribe(function() {
+    store.subscribe(function () {
         const state = store.getState();
         if (shouldMonitorBeRunning(state) === true && statusMonitorInterval === null) {
             // start monitor
