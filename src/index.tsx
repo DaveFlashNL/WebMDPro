@@ -26,7 +26,7 @@ serviceRegistry.mediaRecorderService = new MediaRecorderService();
 serviceRegistry.mediaSessionService = new BrowserMediaSessionService(store);
 
 Object.defineProperty(window, 'wmdVersion', {
-    value: '3.0.1',
+    value: '1.1.0',
     writable: false,
 });
 
@@ -108,6 +108,10 @@ if (localStorage.getItem('version') !== (window as any).wmdVersion) {
         }
     });
 })();
+
+<Typography component="h1" variant="h4">
+    Web MiniDisc Pro
+</Typography>
 
 ReactDOM.render(
     <Provider store={store}>
