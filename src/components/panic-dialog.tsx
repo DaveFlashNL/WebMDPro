@@ -42,7 +42,7 @@ export const PanicDialog = (props: {}) => {
             aria-labelledby="error-dialog-slide-title"
             aria-describedby="error-dialog-slide-description"
         >
-            <DialogTitle id="alert-dialog-slide-title">Oops… Something unexpected happened.</DialogTitle>
+            <DialogTitle id="alert-dialog-slide-title">Oops… something unexpected happened.</DialogTitle>
             <DialogContent>
                 <Typography color="textSecondary" variant="body1" component="div">
                     Try to restart the app. If the error persists, try the followings:
