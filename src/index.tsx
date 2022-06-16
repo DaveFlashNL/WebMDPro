@@ -109,10 +109,6 @@ if (localStorage.getItem('version') !== (window as any).wmdVersion) {
     });
 })();
 
-<Typography component="h1" variant="h4">
-    Web MiniDisc Pro
-</Typography>
-
 ReactDOM.render(
     <Provider store={store}>
         <App />
