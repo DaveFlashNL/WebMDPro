@@ -1,6 +1,6 @@
 # Web MiniDisc Pro*
 (*mostly visually oriented fork by ddM/DaveFlash)<br/>
-*Brings NetMD Devices to the Web*
+*Brings NetMD devices to the web*
 
 ### Differences between [Web Minidisc](https://github.com/cybercase/webminidisc) and Web Minidisc Pro
 As per request of the original creator, all future changes by Asivery will be implemented on his [fork](https://github.com/asivery/webminidisc), and subsequently mirrored to this fork, while here, I, DaveFlash, as a webdeveloper, will focus mainly on the UI/UX side of things and less on the technical.
@@ -9,9 +9,10 @@ As per request of the original creator, all future changes by Asivery will be im
 For now the extra features of Web Minidisc Pro are:
 - The ability to connect to NetMD units available on the local network with the help of [Remote NetMD](https://github.com/asivery/remote-netmd-server)
 - Downloading tracks straight from the player via NetMD (only for Sony MZ-RH1 users)
+- Downloading tracks straight from the player via NetMD factory mode using exploits. (only certain models)
 But there are more features on the way.
 
-Live @ [webmdpro.ddw.nu](https://webmdpro.ddw.nu)</br>
+Live @ [webmd.pro](https://webmd.pro)</br>
 and @ [web.minidisc.wiki](https://web.minidisc.wiki)</br>
 How it works @ [https://www.youtube.com/watch?v=Frs8qhw0g9Y](https://www.youtube.com/watch?v=Frs8qhw0g9Y)</br>
 Blogpost @ [https://stefano.brilli.me/blog/web-minidisc](https://stefano.brilli.me/blog/web-minidisc)
@@ -33,7 +34,7 @@ You can find installation instruction [here](https://docs.microsoft.com/en-us/wi
 #### Chrome OS
 Works without any addtional set up - tested with 91 stable (91.0.4472.102). If your user account or device is managed (by your school or company) you may run into some issues. If you are using a personal google account on a personal chromebook you should be good to go.
 
-### Don't know what is a MiniDisc?
+### Don't know what a MiniDisc is?
 
 - Where to start -> [https://en.wikipedia.org/wiki/MiniDisc](https://en.wikipedia.org/wiki/MiniDisc)
 - Community -> [https://www.reddit.com/r/minidisc/](https://www.reddit.com/r/minidisc/)

@@ -21,7 +21,7 @@ export const slice = createSlice({
     name: 'main',
     initialState,
     reducers: {
-        setDisc: (state, action: PayloadAction<Disc>) => {
+        setDisc: (state, action: PayloadAction<Disc | null>) => {
             state.disc = action.payload;
         },
         setDeviceName: (state, action: PayloadAction<string>) => {

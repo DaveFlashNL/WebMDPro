@@ -5,7 +5,6 @@ import { Mutex } from 'async-mutex';
 import { Theme } from '@material-ui/core';
 import * as mm from 'music-metadata-browser';
 
-
 export function sleep(ms: number) {
     return new Promise(resolve => {
         setTimeout(resolve, ms);
@@ -35,6 +34,8 @@ export type TitledFile = {
     file: File;
     title: string;
     fullWidthTitle: string;
+    forcedEncoding: 'LP2' | 'LP4' | null;
+    bytesToSkip: number;
 };
 
 export async function getMetadataFromFile(file: File) {
@@ -55,6 +56,77 @@ export async function getMetadataFromFile(file: File) {
             album: 'Unknown Album',
             duration: 0,
         };
+    }
+}
+
+export async function getATRACOMAEncoding(file: File): Promise<{ format: 'LP2' | 'LP4'; headerLength: number } | 'ILLEGAL' | null> {
+    const fileData = new Uint8Array(await file.arrayBuffer());
+    if (file.size < 96) return null; // Too short to be an OMA
+
+    let ea3Offset;
+
+    if (Buffer.from(fileData.slice(0, 3)).toString() === 'ea3') {
+        let tagLength = ((fileData[6] & 0x7f) << 21) | ((fileData[7] & 0x7f) << 14) | ((fileData[8] & 0x7f) << 7) | (fileData[9] & 0x7f);
+        ea3Offset = tagLength + 10;
+        if ((fileData[5] & 0x10) !== 0) {
+            ea3Offset += 10;
+        }
+    } else {
+        ea3Offset = 0;
+    }
+    let ea3Header = fileData.slice(ea3Offset, ea3Offset + 96);
+    const headerLength = ea3Offset + 96;
+
+    if (Buffer.from(ea3Header.slice(0, 4)).toString() !== 'EA3\x01') return null; // Not a valid OMA - invalid EA3 header
+
+    if (ea3Header[5] !== 96) return null; // Invalid EA3 tag size;
+    let encryptionType = (ea3Header[6] << 8) | ea3Header[7];
+    if (encryptionType !== 0xffff && encryptionType !== 0xff80) {
+        return 'ILLEGAL'; // It's an OMA, but encrypted.
+    }
+    let codecInfo = (ea3Header[33] << 16) | (ea3Header[34] << 8) | ea3Header[35];
+    let codecType = ea3Header[32];
+    if (codecType === 1) return 'ILLEGAL'; // ATRAC3Plus
+    if ([3, 4, 5].includes(codecType)) return null; // MP3 / LPCM / WMA - pass to ffmpeg.
+    if (codecType !== 0) return 'ILLEGAL'; // Unknown codec.
+    // At this point, the OMA is known to be ATRAC3
+
+    const sampleRateTable = [320, 441, 480, 882, 960, 0];
+    const sampleRate = sampleRateTable[(codecInfo >> 13) & 7] * 100;
+    if (sampleRate !== 44100) return 'ILLEGAL'; // Unknown sample rate.
+    const frameSize = (codecInfo & 0x3ff) * 8;
+    const jointStereo = (codecInfo >> 17) & 1;
+
+    if (frameSize === 384 && jointStereo === 0) return { format: 'LP2', headerLength };
+    if (frameSize === 192 && jointStereo === 1) return { format: 'LP4', headerLength };
+    return 'ILLEGAL';
+}
+
+export async function getATRACWAVEncoding(file: File): Promise<{ format: 'LP2' | 'LP4'; headerLength: number } | null> {
+    const fileData = await file.arrayBuffer();
+    if (file.size < 44) return null; // Too short to be a WAV
+
+    if (Buffer.from(fileData.slice(0, 4)).toString() !== 'RIFF') return null; // Missing header part 1
+    if (Buffer.from(fileData.slice(8, 16)).toString() !== 'WAVEfmt ') return null; // Missing header part 2
+
+    const wavType = Buffer.from(fileData.slice(20, 22)).readUInt16LE(0);
+    const channels = Buffer.from(fileData.slice(22, 24)).readUInt16LE(0);
+    if (wavType !== 0x270 || channels !== 0x02) return null; // Not ATRAC3
+
+    const formatSectionSize = Buffer.from(fileData.slice(16, 20)).readUInt32LE(0);
+
+    const headerLength = 20 + formatSectionSize + 8;
+
+    const bytesSampleRate = Buffer.from(fileData.slice(24, 28)).readUInt32LE(0);
+    const bytesPerFrame = Buffer.from(fileData.slice(32, 34)).readUInt16LE(0) / 2;
+    if (bytesSampleRate !== 44100) return null;
+    switch (bytesPerFrame) {
+        case 192:
+            return { format: 'LP2', headerLength };
+        case 96:
+            return { format: 'LP4', headerLength };
+        default:
+            return null;
     }
 }
 
@@ -96,7 +168,6 @@ export function loadPreference<T>(key: string, defaultValue: T): T {
         }
     }
 }
-
 
 export function framesToSec(frames: number) {
     return frames / 512;
@@ -322,7 +393,7 @@ export function askNotificationPermission(): Promise<NotificationPermission> {
     }
 }
 
-export function downloadBlob(buffer: Blob, fileName: string){
+export function downloadBlob(buffer: Blob, fileName: string) {
     let url = URL.createObjectURL(buffer);
     let a = document.createElement('a');
     document.body.appendChild(a);

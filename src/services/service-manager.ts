@@ -1,6 +1,6 @@
 import React, { ReactHTMLElement } from 'react';
 import { NetMDService, NetMDUSBService } from './netmd';
-import { NetMDMockService } from './netmd-mock';
+// import { NetMDMockService } from './netmd-mock';
 import { NetMDRemoteService } from './remote-netmd';
 
 export type CustomParameters = { [key: string]: string | number | boolean };
@@ -30,7 +30,7 @@ export const Services: ServicePrototype[] = [
     {
         name: 'USB NetMD',
         getConnectName: () => 'Connect',
-        create: () => new NetMDUSBService({ debug: true }),
+        create: () => (window as any).native?.interface ?? new NetMDUSBService({ debug: true }),
     },
     {
         name: 'Remote NetMD',
@@ -69,23 +69,58 @@ export const Services: ServicePrototype[] = [
         description: React.createElement("p", null, "Test NetMD interface. It does nothing"),
         create: (parameters) => {
             console.log(`Given parameters: ${JSON.stringify(parameters)}`);
-            return new NetMDMockService();
+            return new NetMDMockService(parameters);
         },
         customParameters: [
-            {
-                userFriendlyName: 'Test Boolean',
-                type: 'boolean',
-                varName: 'boolean',
-            },
             {
                 userFriendlyName: 'Test Number',
                 type: 'number',
                 varName: 'number',
             },
             {
-                userFriendlyName: 'Test String',
+                userFriendlyName: 'Override disc title',
                 type: 'string',
-                varName: 'string',
+                varName: 'overrideTitle',
+            },
+            {
+                userFriendlyName: 'Override full-width disc title',
+                type: 'string',
+                varName: 'overrideFWTitle',
+            },
+            {
+                userFriendlyName: 'capabilityContentList',
+                type: 'boolean',
+                varName: 'capabilityContentList',
+            },
+            {
+                userFriendlyName: 'capabilityPlaybackControl',
+                type: 'boolean',
+                varName: 'capabilityPlaybackControl',
+            },
+            {
+                userFriendlyName: 'capabilityMetadataEdit',
+                type: 'boolean',
+                varName: 'capabilityMetadataEdit',
+            },
+            {
+                userFriendlyName: 'capabilityTrackUpload',
+                type: 'boolean',
+                varName: 'capabilityTrackUpload',
+            },
+            {
+                userFriendlyName: 'capabilityTrackDownload',
+                type: 'boolean',
+                varName: 'capabilityTrackDownload',
+            },
+            {
+                userFriendlyName: 'capabilityDiscEject',
+                type: 'boolean',
+                varName: 'capabilityDiscEject',
+            },
+            {
+                userFriendlyName: 'capabilityFactoryMode',
+                type: 'boolean',
+                varName: 'capabilityFactoryMode',
             }
         ]
     },*/

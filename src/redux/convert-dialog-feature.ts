@@ -9,7 +9,7 @@ export interface ConvertDialogFeature {
     visible: boolean;
     format: UploadFormat;
     titleFormat: TitleFormatType;
-    titles: { title: string; fullWidthTitle: string; duration: number }[];
+    titles: { title: string; fullWidthTitle: string; duration: number; forcedEncoding: 'LP2' | 'LP4' | null; bytesToSkip: number }[];
 }
 
 const initialState: ConvertDialogFeature = {
@@ -34,7 +34,12 @@ const slice = createSlice({
             state.titleFormat = action.payload;
             savePreference('trackTitleFormat', state.titleFormat);
         },
-        setTitles: (state, action: PayloadAction<{ title: string; fullWidthTitle: string; duration: number }[]>) => {
+        setTitles: (
+            state,
+            action: PayloadAction<
+                { title: string; fullWidthTitle: string; duration: number; forcedEncoding: 'LP2' | 'LP4' | null; bytesToSkip: number }[]
+            >
+        ) => {
             state.titles = action.payload;
         },
     },

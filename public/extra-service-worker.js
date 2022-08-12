@@ -4,18 +4,18 @@ var revision = "10";
 self.__precacheManifest = (self.__precacheManifest || []).concat([
     {
         "revision": revision,
-        "url": "/webminidisc/atracdenc.js"
+        "url": "/atracdenc.js"
     },
     {
         "revision": revision,
-        "url": "/webminidisc/worker.min.js"
+        "url": "/worker.min.js"
     },
     {
         "revision": revision,
-        "url": "/webminidisc/ffmpeg-core.js"
+        "url": "/ffmpeg-core.js"
     },
     {
         "revision": revision,
-        "url": "/webminidisc/recorderWorker.js"
+        "url": "/recorderWorker.js"
     },
 ]);

@@ -3,7 +3,7 @@ import { enableBatching } from 'redux-batched-actions';
 import { filterOutCorrupted, getSimpleServices, ServiceConstructionInfo } from '../services/service-manager';
 import { savePreference, loadPreference } from '../utils';
 
-export type Views = 'WELCOME' | 'MAIN';
+export type Views = 'WELCOME' | 'MAIN' | 'FACTORY';
 
 export interface AppState {
     mainView: Views;
@@ -20,6 +20,7 @@ export interface AppState {
     fullWidthSupport: boolean;
     availableServices: ServiceConstructionInfo[];
     lastSelectedService: number;
+    factoryModeRippingInMainUi: boolean;
 }
 
 export const buildInitialState = (): AppState => {
@@ -38,6 +39,8 @@ export const buildInitialState = (): AppState => {
         fullWidthSupport: loadPreference('fullWidthSupport', false),
         availableServices: getSimpleServices().concat(filterOutCorrupted(loadPreference('customServices', []))),
         lastSelectedService: loadPreference('lastSelectedService', 0),
+        factoryModeRippingInMainUi: false, // As this value is heavily device-dependent and not really that stable yet
+        // it should not be stored in the preferences, and should default to false.
     };
 };
 
@@ -99,6 +102,9 @@ export const slice = createSlice({
         setLastSelectedService: (state, action: PayloadAction<number>) => {
             state.lastSelectedService = action.payload;
             savePreference('lastSelectedService', state.lastSelectedService);
+        },
+        setFactoryModeRippingInMainUi: (state, action: PayloadAction<boolean>) => {
+            state.factoryModeRippingInMainUi = action.payload;
         },
     },
 });

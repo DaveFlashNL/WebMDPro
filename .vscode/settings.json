@@ -8,5 +8,6 @@
         "**/.DS_Store": true,
         "build/": true,
         "webminidisc/": true,
-    }
+    },
+    "window.autoDetectColorScheme": true
 }

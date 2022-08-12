@@ -6,7 +6,6 @@ import {
     openPairedDevice,
     Wireformat,
     MDTrack,
-    download,
     getDeviceStatus,
     DeviceStatus,
     Group,
@@ -14,12 +13,24 @@ import {
     DiscFormat,
     upload,
     rewriteDiscGroups,
+    DiscFlag,
+    MDSession,
+    EKBOpenSource,
+    NetMDFactoryInterface,
+    readUTOCSector,
+    writeUTOCSector,
+    prepareDownload,
+    getDescriptiveDeviceCode,
+    cleanRead,
+    MemoryType,
+    formatQuery,
 } from 'netmd-js';
 import { makeGetAsyncPacketIteratorOnWorkerThread } from 'netmd-js/dist/web-encrypt-worker';
 import { Logger } from 'netmd-js/dist/logger';
-import { sanitizeHalfWidthTitle, sanitizeFullWidthTitle } from 'netmd-js/dist/utils';
+import { sanitizeHalfWidthTitle, sanitizeFullWidthTitle, concatUint8Arrays } from 'netmd-js/dist/utils';
 import { asyncMutex, sleep, isSequential, recomputeGroupsAfterTrackMove } from '../utils';
 import { Mutex } from 'async-mutex';
+import { CachedSectorAtracDownload, ExploitStateManager, FirmwareDumper, ForceTOCEdit, isCompatible, Tetris } from 'netmd-exploits';
 
 const Worker = require('worker-loader!netmd-js/dist/web-encrypt-worker.js'); // eslint-disable-line import/no-webpack-loader-syntax
 
@@ -29,6 +40,15 @@ export enum Capability {
     metadataEdit,
     trackUpload,
     trackDownload,
+    discEject,
+    factoryMode,
+}
+
+export enum ExploitCapability {
+    runTetris,
+    flushUTOC,
+    downloadAtrac,
+    readFirmware,
 }
 
 export interface NetMDService {
@@ -49,7 +69,10 @@ export interface NetMDService {
     deleteTracks(indexes: number[]): Promise<void>;
     moveTrack(src: number, dst: number, updateGroups?: boolean): Promise<void>;
     wipeDisc(): Promise<void>;
+    ejectDisc(): Promise<void>;
     wipeDiscTitleInfo(): Promise<void>;
+    prepareUpload(): Promise<void>;
+    finalizeUpload(): Promise<void>;
     upload(
         title: string,
         fullWidthTitle: string,
@@ -69,10 +92,31 @@ export interface NetMDService {
     gotoTrack(index: number): Promise<void>;
     gotoTime(index: number, hour: number, minute: number, second: number, frame: number): Promise<void>;
     getPosition(): Promise<number[] | null>;
+
+    factory(): Promise<NetMDFactoryService | null>;
+}
+
+export interface NetMDFactoryService {
+    mutex: Mutex;
+    readUTOCSector(index: number): Promise<Uint8Array>;
+    writeUTOCSector(index: number, data: Uint8Array): Promise<void>;
+    getDeviceFirmware(): Promise<string>;
+    getExploitCapabilities(): Promise<ExploitCapability[]>;
+    readRAM(callback?: (progress: { readBytes: number; totalBytes: number }) => void): Promise<Uint8Array>;
+
+    // depend on netmd-exploits:
+    flushUTOCCacheToDisc(): Promise<void>;
+    runTetris(): Promise<void>;
+    readFirmware(callback: (progress: { type: 'RAM' | 'ROM'; readBytes: number; totalBytes: number }) => void): Promise<Uint8Array>;
+    exploitDownloadTrack(
+        track: number,
+        callback: (progress: { sectorsRead: number; totalSectors: number; action: 'Reading' | 'Seeking'; sector?: string }) => void
+    ): Promise<Uint8Array>;
 }
 
 export class NetMDUSBService implements NetMDService {
     private netmdInterface?: NetMDInterface;
+    private currentSession?: MDSession;
     private logger?: Logger;
     private cachedContentList?: Disc;
     public mutex = new Mutex();
@@ -94,18 +138,53 @@ export class NetMDUSBService implements NetMDService {
                 child: () => this.logger!,
             };
         }
+
+        Object.defineProperty(window, 'exposeAPIToConsole', {
+            writable: true,
+            value: () => {
+                console.log('%cThe following features have been exposed:', 'font-size: 20px; color: cyan;');
+                console.log('%c- formatQuery() - a function that formats given hex data with parameters', 'font-size: 15px; color: cyan;');
+                console.log("%c- interface - an instance of netmd-js's NetMDInterface", 'font-size: 15px; color: cyan;');
+                Object.defineProperty(window, 'formatQuery', { writable: false, value: formatQuery });
+                Object.defineProperty(window, 'interface', { writable: false, value: this.netmdInterface });
+            },
+        });
+
+        console.log(
+            '%cIf you would like to experiment with NetMD features in the console, please run exposeAPIToConsole()',
+            'font-size: 25px; color: cyan;'
+        );
     }
 
+    @asyncMutex
     async getServiceCapabilities() {
         const basic = [Capability.contentList, Capability.playbackControl];
         if (this.netmdInterface?.netMd.getVendor() === 0x54c && this.netmdInterface.netMd.getProduct() === 0x0286) {
             // MZ-RH1
             basic.push(Capability.trackDownload);
         }
-        const disc = await this.listContentUsingCache();
-        if (!disc.writeProtected) {
-            return [...basic, Capability.trackUpload, Capability.metadataEdit];
+        if (await this.netmdInterface?.canEjectDisc()) {
+            basic.push(Capability.discEject);
         }
+
+        // TODO: Add a flag for this instead of relying just on the name.
+        const deviceName = this.netmdInterface?.netMd.getDeviceName();
+        if (
+            (deviceName?.includes('Sony') &&
+                (deviceName?.includes('MZ-N') || deviceName?.includes('MZ-S1')) &&
+                !deviceName.includes('MZ-NH')) ||
+            (deviceName?.includes('Aiwa') && deviceName?.includes('AM-NX'))
+        ) {
+            // Only non-HiMD Sony (and Aiwa since it's the same thing) portables have the factory mode.
+            basic.push(Capability.factoryMode);
+        }
+
+        try {
+            const flags = (await this.netmdInterface?.getDiscFlags()) ?? 0;
+            if ((flags & DiscFlag.writeProtected) === 0) {
+                return [...basic, Capability.trackUpload, Capability.metadataEdit];
+            }
+        } catch (err) {}
         return basic;
     }
 
@@ -238,6 +317,7 @@ export class NetMDUSBService implements NetMDService {
             disc.groups.splice(groupIndex, 1);
         }
 
+        this.cachedContentList = disc;
         await rewriteDiscGroups(this.netmdInterface!, disc);
     }
 
@@ -249,6 +329,9 @@ export class NetMDUSBService implements NetMDService {
 
     @asyncMutex
     async deleteTracks(indexes: number[]) {
+        try {
+            await this.netmdInterface!.stop();
+        } catch (ex) {}
         indexes = indexes.sort();
         indexes.reverse();
         let content = await this.listContentUsingCache();
@@ -263,7 +346,16 @@ export class NetMDUSBService implements NetMDService {
 
     @asyncMutex
     async wipeDisc() {
+        try {
+            await this.netmdInterface!.stop();
+        } catch (ex) {}
         await this.netmdInterface!.eraseDisc();
+        this.dropCachedContentList();
+    }
+
+    @asyncMutex
+    async ejectDisc() {
+        await this.netmdInterface!.ejectDisc();
         this.dropCachedContentList();
     }
 
@@ -283,6 +375,22 @@ export class NetMDUSBService implements NetMDService {
         this.dropCachedContentList();
     }
 
+    @asyncMutex
+    async prepareUpload() {
+        await prepareDownload(this.netmdInterface!);
+        this.currentSession = new MDSession(this.netmdInterface!, new EKBOpenSource());
+        await this.currentSession.init();
+    }
+
+    @asyncMutex
+    async finalizeUpload() {
+        await this.currentSession!.close();
+        await this.netmdInterface!.release();
+        this.currentSession = undefined;
+        this.dropCachedContentList();
+    }
+
+    @asyncMutex
     async upload(
         title: string,
         fullWidthTitle: string,
@@ -290,6 +398,9 @@ export class NetMDUSBService implements NetMDService {
         format: Wireformat,
         progressCallback: (progress: { written: number; encrypted: number; total: number }) => void
     ) {
+        if (this.currentSession === undefined) {
+            throw new Error('Cannot upload without initializing a session first');
+        }
         let total = data.byteLength;
         let written = 0;
         let encrypted = 0;
@@ -306,17 +417,17 @@ export class NetMDUSBService implements NetMDService {
 
         let halfWidthTitle = sanitizeHalfWidthTitle(title);
         fullWidthTitle = sanitizeFullWidthTitle(fullWidthTitle);
-        let mdTrack = new MDTrack(halfWidthTitle, format, data, 0x80000, fullWidthTitle, webWorkerAsyncPacketIterator);
+        let mdTrack = new MDTrack(halfWidthTitle, format, data, 0x400, fullWidthTitle, webWorkerAsyncPacketIterator);
 
-        await download(this.netmdInterface!, mdTrack, ({ writtenBytes }) => {
+        await this.currentSession.downloadTrack(mdTrack, ({ writtenBytes }) => {
             written = writtenBytes;
             updateProgress();
         });
 
         w.terminate();
-        this.dropCachedContentList();
     }
 
+    @asyncMutex
     async download(index: number, progressCallback: (progress: { read: number; total: number }) => void) {
         const [format, data] = await upload(this.netmdInterface!, index, ({ readBytes, totalBytes }) => {
             progressCallback({ read: readBytes, total: totalBytes });
@@ -358,5 +469,83 @@ export class NetMDUSBService implements NetMDService {
     @asyncMutex
     async getPosition() {
         return await this.netmdInterface!.getPosition();
+    }
+
+    @asyncMutex
+    async factory() {
+        try {
+            await this.netmdInterface!.stop();
+        } catch (_) {
+            /*Ignore*/
+        }
+        const factoryInstance = await this.netmdInterface!.factory();
+        const esm = await ExploitStateManager.create(this.netmdInterface!, factoryInstance);
+        return new NetMDFactoryUSBService(factoryInstance, this.mutex, esm);
+    }
+}
+
+class NetMDFactoryUSBService implements NetMDFactoryService {
+    constructor(private factoryInterface: NetMDFactoryInterface, public mutex: Mutex, public exploitStateManager: ExploitStateManager) {}
+    async getExploitCapabilities() {
+        let capabilities = [];
+        if (isCompatible(CachedSectorAtracDownload, this.exploitStateManager.versionCode))
+            capabilities.push(ExploitCapability.downloadAtrac);
+        if (isCompatible(Tetris, this.exploitStateManager.versionCode)) capabilities.push(ExploitCapability.runTetris);
+        if (isCompatible(ForceTOCEdit, this.exploitStateManager.versionCode)) capabilities.push(ExploitCapability.flushUTOC);
+
+        return capabilities;
+    }
+
+    @asyncMutex
+    async readUTOCSector(index: number) {
+        return await readUTOCSector(this.factoryInterface, index);
+    }
+
+    @asyncMutex
+    async writeUTOCSector(index: number, data: Uint8Array) {
+        await writeUTOCSector(this.factoryInterface, index, data);
+    }
+
+    @asyncMutex
+    async flushUTOCCacheToDisc() {
+        await (await this.exploitStateManager.require(ForceTOCEdit)).forceTOCEdit();
+    }
+
+    @asyncMutex
+    async runTetris() {
+        await (await this.exploitStateManager.require(Tetris)).playTetris();
+    }
+
+    @asyncMutex
+    async getDeviceFirmware() {
+        return getDescriptiveDeviceCode(this.factoryInterface);
+    }
+
+    @asyncMutex
+    async readRAM(callback: (progress?: { readBytes: number; totalBytes: number }) => void): Promise<Uint8Array> {
+        const firmwareVersion = await getDescriptiveDeviceCode(this.factoryInterface);
+        const ramSize = firmwareVersion.startsWith('A') ? 0x4800 : 0x9000;
+        let readSlices: Uint8Array[] = [];
+        for (let i = 0; i < ramSize; i += 0x10) {
+            readSlices.push(await cleanRead(this.factoryInterface, i + 0x02000000, 0x10, MemoryType.MAPPED));
+            if (callback !== undefined) callback({ readBytes: i, totalBytes: ramSize });
+        }
+
+        return concatUint8Arrays(...readSlices);
+    }
+
+    @asyncMutex
+    async readFirmware(callback: (progress: { type: 'RAM' | 'ROM'; readBytes: number; totalBytes: number }) => void) {
+        const firmwareRipper = await this.exploitStateManager.require(FirmwareDumper);
+        return await firmwareRipper.readFirmware(callback);
+    }
+
+    @asyncMutex
+    async exploitDownloadTrack(
+        track: number,
+        callback: (data: { sectorsRead: number; totalSectors: number; action: 'READ' | 'SEEK'; sector?: string }) => void
+    ) {
+        const atracDownloader = await this.exploitStateManager.require(CachedSectorAtracDownload);
+        return await atracDownloader.downloadTrack(track, callback);
     }
 }

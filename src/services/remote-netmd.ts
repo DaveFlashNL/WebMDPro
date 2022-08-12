@@ -152,6 +152,11 @@ export class NetMDRemoteService implements NetMDService {
     }
 
     @asyncMutex
+    async ejectDisc() {
+        await this.getFromServer('eject');
+    }
+
+    @asyncMutex
     async wipeDiscTitleInfo() {
         window.alert('Not complete yet');
     }
@@ -161,6 +166,10 @@ export class NetMDRemoteService implements NetMDService {
         return await this.getFromServer('moveTrack', { src, dst });
     }
 
+    async prepareUpload() {}
+    async finalizeUpload() {}
+
+    @asyncMutex
     upload(
         title: string,
         fullWidthTitle: string,
@@ -193,6 +202,7 @@ export class NetMDRemoteService implements NetMDService {
         });
     }
 
+    @asyncMutex
     async download(index: number, progressCallback: (progress: { read: number; total: number }) => void) {
         return null;
     }
@@ -231,5 +241,9 @@ export class NetMDRemoteService implements NetMDService {
     @asyncMutex
     async getPosition() {
         return await this.getFromServer('getPosition');
+    }
+
+    async factory() {
+        return null;
     }
 }
