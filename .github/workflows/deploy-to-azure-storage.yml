@@ -17,7 +17,7 @@ jobs:
     - name: install dependencies
       run: |
           sudo apt-get update
-          sudo apt-get -y install libudev-dev libusb-1.0-0-dev
+          sudo apt-get -y install libudev-dev libusb-1.0-0-dev git
 
   # Cybercase's GH Action specifies 2.3.1 - does it need to be this version?
     - name: checkout
