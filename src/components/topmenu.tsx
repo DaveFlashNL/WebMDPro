@@ -8,9 +8,11 @@ import MenuItem from '@material-ui/core/MenuItem';
 import Divider from '@material-ui/core/Divider';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 
-import { wipeDisc, listContent, selfTest } from '../redux/actions';
+import { wipeDisc, listContent, selfTest, exportCSV, importCSV, openRecognizeTrackDialog } from '../redux/actions';
 import { actions as appActions } from '../redux/app-feature';
 import { actions as renameDialogActions } from '../redux/rename-dialog-feature';
+import { actions as factoryNoticeDialogActions } from '../redux/factory/factory-notice-dialog-feature';
+import { actions as encoderSetupDialogActions } from '../redux/encoder-setup-dialog-feature';
 import { useShallowEqualSelector } from '../utils';
 import Link from '@material-ui/core/Link';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
@@ -27,11 +29,17 @@ import ExitToAppIcon from '@material-ui/icons/ExitToApp';
 import InfoIcon from '@material-ui/icons/Info';
 import ToggleOffIcon from '@material-ui/icons/ToggleOff';
 import ToggleOnIcon from '@material-ui/icons/ToggleOn';
+import MusicNoteIcon from '@material-ui/icons/MusicNote';
 import Win95Icon from '../images/win95/win95.png';
 import HelpIcon from '@material-ui/icons/Help';
+import SettingsIcon from '@material-ui/icons/Settings';
+import MusicNote from '@material-ui/icons/MusicNote';
+import GetAppIcon from '@material-ui/icons/GetApp';
+import PublishIcon from '@material-ui/icons/Publish';
 
 import { W95TopMenu } from './win95/topmenu';
 import { Capability } from '../services/netmd';
+import { enableFactoryRippingModeInMainUi } from '../redux/factory/factory-actions';
 
 const useStyles = makeStyles(theme => ({
     listItemIcon: {
@@ -47,25 +55,34 @@ export const TopMenu = function(props: { onClick?: () => void }) {
     const classes = useStyles();
     const dispatch = useDispatch();
 
-    let { mainView, darkMode, vintageMode, fullWidthSupport } = useShallowEqualSelector(state => state.appState);
-    const deviceCapabilities = useShallowEqualSelector(state => state.main.deviceCapabilities);
+    let {
+        mainView,
+        darkMode,
+        vintageMode,
+        fullWidthSupport,
+        factoryModeRippingInMainUi,
+        audioExportService,
+        audioExportServiceConfig,
+    } = useShallowEqualSelector(state => state.appState);
+    const { deviceCapabilities, disc } = useShallowEqualSelector(state => state.main);
     let discTitle = useShallowEqualSelector(state => state.main.disc?.title ?? ``);
     let fullWidthDiscTitle = useShallowEqualSelector(state => state.main.disc?.fullWidthTitle ?? ``);
 
     const githubLinkRef = React.useRef<null | HTMLAnchorElement>(null);
     const helpLinkRef = React.useRef<null | HTMLAnchorElement>(null);
+    const hiddenFileInputRef = React.useRef<null | HTMLInputElement>(null);
     const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(null);
-    const [showSelfTest, setShowSelfTest] = React.useState(false);
+    const [isShiftDown, setIsShiftDown] = React.useState(false);
     const menuOpen = Boolean(menuAnchorEl);
 
     const isCapable = (capability: Capability) => deviceCapabilities.includes(capability);
 
     const handleMenuOpen = useCallback(
         (event: React.MouseEvent<HTMLElement>) => {
-            setShowSelfTest(event.shiftKey);
+            setIsShiftDown(event.shiftKey);
             setMenuAnchorEl(event.currentTarget);
         },
-        [setMenuAnchorEl, setShowSelfTest]
+        [setMenuAnchorEl, setIsShiftDown]
     );
 
     const handleDarkMode = useCallback(() => {
@@ -90,7 +107,7 @@ export const TopMenu = function(props: { onClick?: () => void }) {
     }, [dispatch, fullWidthSupport]);
 
     const handleRefresh = useCallback(() => {
-        dispatch(listContent());
+        dispatch(listContent(true));
         handleMenuClose();
     }, [dispatch, handleMenuClose]);
 
@@ -123,6 +140,17 @@ export const TopMenu = function(props: { onClick?: () => void }) {
         handleMenuClose();
     }, [dispatch, handleMenuClose]);
 
+    const handleEncoderSetup = useCallback(() => {
+        dispatch(
+            batchActions([
+                encoderSetupDialogActions.setCustomParameters({ ...audioExportServiceConfig }),
+                encoderSetupDialogActions.setSelectedServiceIndex(audioExportService),
+                encoderSetupDialogActions.setVisible(true),
+            ])
+        );
+        handleMenuClose();
+    }, [dispatch, handleMenuClose, audioExportService, audioExportServiceConfig]);
+
     const handleShowChangelog = useCallback(() => {
         dispatch(appActions.showChangelogDialog(true));
         handleMenuClose();
@@ -152,8 +180,47 @@ export const TopMenu = function(props: { onClick?: () => void }) {
         [handleMenuClose]
     );
 
+    const handleEnterFactoryMode = useCallback(() => {
+        dispatch(factoryNoticeDialogActions.setVisible(true));
+        handleMenuClose();
+    }, [dispatch, handleMenuClose]);
+
+    const handleToggleExploitsInMainUI = useCallback(() => {
+        if (factoryModeRippingInMainUi) {
+            dispatch(appActions.setFactoryModeRippingInMainUi(false));
+            //add in SP speedup download
+        } else {
+            dispatch(enableFactoryRippingModeInMainUi());
+            //add in SP speedup download
+        }
+        handleMenuClose();
+    }, [dispatch, factoryModeRippingInMainUi, handleMenuClose]);
+
+    const handleExportCSV = useCallback(() => {
+        dispatch(exportCSV());
+        handleMenuClose();
+    }, [dispatch, handleMenuClose]);
+
+    const handleImportCSV = useCallback(() => {
+        hiddenFileInputRef.current?.click();
+        handleMenuClose();
+    }, [hiddenFileInputRef, handleMenuClose]);
+
+    const handleCSVImportFromFile = useCallback(
+        (event: any) => {
+            const file = event.target.files[0];
+            dispatch(importCSV(file));
+        },
+        [dispatch]
+    );
+
+    const handleOpenSongRecognition = useCallback(() => {
+        dispatch(openRecognizeTrackDialog());
+        handleMenuClose();
+    }, [dispatch, handleMenuClose]);
+
     const menuItems = [];
-    if (mainView === 'MAIN') {
+    if (mainView === 'MAIN' && disc !== null) {
         menuItems.push(
             <MenuItem key="update" onClick={handleRefresh}>
                 <ListItemIcon className={classes.listItemIcon}>
@@ -162,6 +229,16 @@ export const TopMenu = function(props: { onClick?: () => void }) {
                 <ListItemText>Reload TOC</ListItemText>
             </MenuItem>
         );
+        if (isCapable(Capability.factoryMode)) {
+            menuItems.push(
+                <MenuItem key="factoryEntry" onClick={handleEnterFactoryMode}>
+                    <ListItemIcon className={classes.listItemIcon}>
+                        <SettingsIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Enter Homebrew Mode</ListItemText>
+                </MenuItem>
+            );
+        }
         menuItems.push(
             <MenuItem key="title" onClick={handleRenameDisc} disabled={!isCapable(Capability.metadataEdit)}>
                 <ListItemIcon className={classes.listItemIcon}>
@@ -178,6 +255,38 @@ export const TopMenu = function(props: { onClick?: () => void }) {
                 <ListItemText>Wipe Disc</ListItemText>
             </MenuItem>
         );
+
+        menuItems.push(
+            <MenuItem
+                key="song-recognition"
+                onClick={handleOpenSongRecognition}
+                disabled={!isCapable(Capability.playbackControl) || !isCapable(Capability.contentList)}
+            >
+                <ListItemIcon className={classes.listItemIcon}>
+                    <MusicNoteIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Song Recognition</ListItemText>
+            </MenuItem>
+        );
+
+        menuItems.push(
+            <MenuItem key="import-csv" onClick={handleImportCSV}>
+                <ListItemIcon className={classes.listItemIcon}>
+                    <PublishIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Import titles from CSV</ListItemText>
+            </MenuItem>
+        );
+
+        menuItems.push(
+            <MenuItem key="export-csv" onClick={handleExportCSV}>
+                <ListItemIcon className={classes.listItemIcon}>
+                    <GetAppIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Export titles to CSV</ListItemText>
+            </MenuItem>
+        );
+
         menuItems.push(
             <MenuItem key="exit" onClick={handleExit}>
                 <ListItemIcon className={classes.listItemIcon}>
@@ -186,8 +295,6 @@ export const TopMenu = function(props: { onClick?: () => void }) {
                 <ListItemText>Exit</ListItemText>
             </MenuItem>
         );
-    }
-    if (mainView === 'MAIN') {
         menuItems.push(<Divider key="action-divider" />);
         menuItems.push(
             <MenuItem key="allowFullWidth" onClick={handleAllowFullWidth}>
@@ -205,6 +312,48 @@ export const TopMenu = function(props: { onClick?: () => void }) {
                 </ListItemText>
             </MenuItem>
         );
+        if (isCapable(Capability.factoryMode)) {
+            /* possible future addition: add in SP speedup upload? to same toggle function for supported devices */
+            menuItems.push(
+                <MenuItem key="factoryUnify" onClick={handleToggleExploitsInMainUI}>
+                    <ListItemIcon className={classes.listItemIcon}>
+                        {MainUIExploits ? <ToggleOnIcon fontSize="small" /> : <ToggleOffIcon fontSize="small" />}
+                    </ListItemIcon>
+                    <ListItemText>
+                        {MainUIExploits ? `Disable ` : `Enable `}
+                        <Tooltip
+                            title="This feature enables advanced RH1-style ripping and uploads inside the main interface. The homebrew mode's notice still applies."
+                            arrow
+                        >
+                            <span className={classes.toolTippedText}>Enable exploits</span>
+                        </Tooltip>
+                    </ListItemText>
+                </MenuItem>
+            );
+        }
+        /*^ code to be combined:
+
+        const handleToggleSPUploadSpeedup = useCallback(() => {
+        dispatch(toggleSPUploadSpeedup());
+        handleMenuClose();
+    }, [dispatch, handleMenuClose]);
+
+        <MenuItem
+            key="speedupSP"
+            onClick={handleToggleSPUploadSpeedup}
+            disabled={!exploitCapabilities.includes(ExploitCapability.spUploadSpeedup)}
+        >
+            <ListItemIcon className={classes.listItemIcon}>
+                {spUploadSpeedupActive ? <ToggleOnIcon fontSize="small" /> : <ToggleOffIcon fontSize="small" />}
+            </ListItemIcon>
+            <ListItemText>
+                {spUploadSpeedupActive ? `Disable ` : `Enable `}
+                <Tooltip title="On some devices, this can speed up SP upload" arrow>
+                    <span className={classes.toolTippedText}>SP Upload Speedup</span>
+                </Tooltip>
+            </ListItemText>
+        </MenuItem>
+        */
     }
     menuItems.push(
         <MenuItem key="darkMode" onClick={handleDarkMode}>
@@ -215,7 +364,7 @@ export const TopMenu = function(props: { onClick?: () => void }) {
             <ListItemText>Dark Mode</ListItemText>
         </MenuItem>
     );
-    if (mainView === 'MAIN') {
+    /*if (mainView === 'MAIN') {
         menuItems.push(
             <MenuItem key="vintageMode" onClick={handleVintageMode}>
                 <ListItemIcon className={classes.listItemIcon}>
@@ -225,7 +374,7 @@ export const TopMenu = function(props: { onClick?: () => void }) {
             </MenuItem>
         );
 
-        if (showSelfTest) {
+        if (isShiftDown) {
             menuItems.push(
                 <MenuItem key="test" onClick={handleSelfTest}>
                     <ListItemIcon className={classes.listItemIcon}>
@@ -235,9 +384,19 @@ export const TopMenu = function(props: { onClick?: () => void }) {
                 </MenuItem>
             );
         }
-    }
+    }*/
     if (mainView === 'MAIN') {
         menuItems.push(<Divider key="feature-divider" />);
+    }
+    if (mainView === 'WELCOME') {
+        menuItems.push(
+            <MenuItem key="encoderSetup" onClick={handleEncoderSetup}>
+                <ListItemIcon className={classes.listItemIcon}>
+                    <MusicNote fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Encoder Setup</ListItemText>
+            </MenuItem>
+        );
     }
     menuItems.push(
         <MenuItem key="about" onClick={handleShowAbout}>
@@ -315,6 +474,7 @@ export const TopMenu = function(props: { onClick?: () => void }) {
             <Menu id="actions-menu" anchorEl={menuAnchorEl} keepMounted open={menuOpen} onClose={handleMenuClose}>
                 {menuItems}
             </Menu>
+            <input type="file" ref={hiddenFileInputRef} style={{ display: 'none' }} onChange={handleCSVImportFromFile} />
         </React.Fragment>
     );
 };
