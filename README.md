@@ -1,7 +1,5 @@
-# Web MiniDisc Pro*
+# Web MiniDisc Pro
 *Brings NetMD devices to the web*
-
-PLEASE NOTE: this fork may not build at the moment as it's outdated and incomplete, please clone from asivery's source until further notice!!!
 
 ###### <ins>(Please read) Important changes for macOS developers on ARM-based Macs listed below.</ins>
 
@@ -30,7 +28,8 @@ Works without any addtional set up - tested with 91 stable (91.0.4472.102). If y
 
 ## macOS 
 It just works... no need to download or install any software. 
-Users go to live version at: https://webmd.pro. (⚠️A Chrome or Chromium-based browser is required.)
+Users go to live version at: https://webmd.pro.
+(⚠️ A Chrome or Chromium-based browser is required.)
 
 #### Development changes:
 
