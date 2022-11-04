@@ -7,21 +7,28 @@ import panicDialog, { actions as panicDialogActions } from './panic-dialog-featu
 import convertDialog from './convert-dialog-feature';
 import dumpDialog from './dump-dialog-feature';
 import recordDialog from './record-dialog-feature';
+import songRecognitionDialog from './song-recognition-dialog-feature';
+import songRecognitionProgressDialog from './song-recognition-progress-dialog-feature';
 import appState, { actions as appActions, buildInitialState as buildInitialAppState } from './app-feature';
-import factory from './factory-feature';
-import factoryFragmentModeEditDialog from './factory-fragment-mode-edit-dialog-feature';
-import factoryProgressDialog from './factory-progress-dialog-feature';
-import factoryNoticeDialog from './factory-notice-dialog-feature';
-import factoryEditOtherValuesDialog from './factory-edit-other-values-dialog-feature';
+import factory from './factory/factory-feature';
+
+import factoryFragmentModeEditDialog from './factory/factory-fragment-mode-edit-dialog-feature';
+import factoryProgressDialog from './factory/factory-progress-dialog-feature';
+import factoryNoticeDialog from './factory/factory-notice-dialog-feature';
+import factoryEditOtherValuesDialog from './factory/factory-edit-other-values-dialog-feature';
+import encoderSetupDialog from './encoder-setup-dialog-feature';
 
 import main from './main-feature';
+import { batchActions } from 'redux-batched-actions';
 
 const errorCatcher: Middleware = store => next => async action => {
     try {
         await next(action);
     } catch (e) {
         console.error(e);
-        next(panicDialogActions.setVisible(true));
+        next(
+            batchActions([panicDialogActions.setErrorProvided((e as any).stack ?? '<Not Provided>'), panicDialogActions.setVisible(true)])
+        );
     }
 };
 
@@ -34,18 +41,21 @@ let reducer = combineReducers({
     convertDialog,
     dumpDialog,
     recordDialog,
+    songRecognitionDialog,
+    songRecognitionProgressDialog,
     factory,
     factoryFragmentModeEditDialog,
     factoryProgressDialog,
     factoryNoticeDialog,
     factoryEditOtherValuesDialog,
+    encoderSetupDialog,
     appState,
     main,
 });
 
 const resetStateAction = appActions.setMainView.toString();
 const resetStatePayoload = 'WELCOME';
-const resetStateReducer: typeof reducer = function(...args) {
+const resetStateReducer: typeof reducer = function (...args) {
     const action = args[1];
     if (action.type === resetStateAction && action.payload === resetStatePayoload) {
         return {

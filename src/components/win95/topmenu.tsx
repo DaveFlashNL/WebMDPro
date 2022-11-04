@@ -59,7 +59,7 @@ export const W95TopMenu = (props: {
     );
     items.push(
         <ListItem key={`menu-gh`}>
-            <a rel="noopener noreferrer" href="https://github.com/asivery/webminidisc" target="_blank">
+            <a rel="noopener noreferrer" href="https://github.com/DaveFlashNL/WebMDPro" target="_blank">
                 Fork me on GitHub
             </a>
         </ListItem>

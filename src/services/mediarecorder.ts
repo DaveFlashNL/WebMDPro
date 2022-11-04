@@ -69,6 +69,8 @@ export class MediaRecorderService {
 
     async stopRecording() {
         this.recorder.stop();
+        this.audioContext?.close();
+        delete this.audioContext;
     }
 
     async closeStream() {

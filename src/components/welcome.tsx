@@ -18,7 +18,7 @@ import { W95Welcome } from './win95/welcome';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 
 import SplitButton, { OptionType } from './split-button';
-import { createService, getConnectButtonName, getSimpleServices, initializeParameters, Services } from '../services/service-manager';
+import { createService, getConnectButtonName, getSimpleServices, Services } from '../services/service-manager';
 import { OtherDeviceDialog } from './other-device-dialog';
 
 import { actions as otherDialogActions } from '../redux/other-device-feature';
@@ -28,6 +28,8 @@ import DeleteIcon from '@material-ui/icons/Delete';
 import AddIcon from '@material-ui/icons/Add';
 import { IconButton } from '@material-ui/core';
 import { ChangelogDialog } from './changelog-dialog';
+import { initializeParameters } from '../custom-parameters';
+import { EncoderSetupDialog } from './encoder-setup-dialog';
 
 const useStyles = makeStyles(theme => ({
     main: {
@@ -146,7 +148,7 @@ export const Welcome = (props: {}) => {
                     batchActions([
                         otherDialogActions.setVisible(true),
                         otherDialogActions.setSelectedServiceIndex(0),
-                        otherDialogActions.setCustomParameters(initializeParameters(firstService)),
+                        otherDialogActions.setCustomParameters(initializeParameters(firstService.customParameters)),
                     ])
                 ),
             customAddIcon: true,
@@ -268,6 +270,7 @@ export const Welcome = (props: {}) => {
             <AboutDialog />
             <ChangelogDialog />
             <OtherDeviceDialog />
+            <EncoderSetupDialog />
         </React.Fragment>
     );
 };

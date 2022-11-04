@@ -1,26 +1,18 @@
 import { createWorker, setLogging } from '@ffmpeg/ffmpeg';
-import { AtracdencProcess } from './atracdenc-worker';
-import { getPublicPathFor } from '../utils';
-const AtracdencWorker = require('worker-loader!./atracdenc-worker'); // eslint-disable-line import/no-webpack-loader-syntax
+import { getATRACWAVEncoding, getPublicPathFor } from '../utils';
+import { AudioExportService, LogPayload } from './audio-export';
 
-export interface LogPayload {
-    message: string;
-    action: string;
-}
-
-export interface AudioExportService {
-    init(): Promise<void>;
-    export(params: { format: string; loudnessTarget?: number; enableReplayGain?: boolean }): Promise<ArrayBuffer>;
-    info(): Promise<{ format: string | null; input: string | null }>;
-    prepare(file: File): Promise<void>;
-}
-
-export class FFMpegAudioExportService implements AudioExportService {
+export class RemoteAtracExportService implements AudioExportService {
     public ffmpegProcess: any;
-    public atracdencProcess?: AtracdencProcess;
     public loglines: { action: string; message: string }[] = [];
     public inFileName: string = ``;
+    public originalFileName: string = ``;
     public outFileNameNoExt: string = ``;
+    public address: string;
+
+    constructor({ address }: { address: string }) {
+        this.address = address;
+    }
 
     async init() {
         setLogging(true);
@@ -38,9 +30,6 @@ export class FFMpegAudioExportService implements AudioExportService {
         });
         await this.ffmpegProcess.load();
 
-        this.atracdencProcess = new AtracdencProcess(new AtracdencWorker());
-        await this.atracdencProcess.init();
-
         let ext = file.name.split('.').slice(-1);
         if (ext.length === 0) {
             throw new Error(`Unrecognized file format: ${file.name}`);
@@ -48,6 +37,7 @@ export class FFMpegAudioExportService implements AudioExportService {
 
         this.inFileName = `inAudioFile.${ext[0]}`;
         this.outFileNameNoExt = `outAudioFile`;
+        this.originalFileName = file.name;
 
         await this.ffmpegProcess.write(this.inFileName, file);
     }
@@ -82,7 +72,6 @@ export class FFMpegAudioExportService implements AudioExportService {
     async export({ format, loudnessTarget, enableReplayGain }: { format: string; loudnessTarget?: number; enableReplayGain?: boolean }) {
         let result: ArrayBuffer;
         let additionalCommands = '';
-        let commonFormatting = `-ac 2 -ar 44100`;
         if (loudnessTarget !== undefined && loudnessTarget <= -5 && loudnessTarget >= -70) {
             additionalCommands += `-filter_complex loudnorm=I=${loudnessTarget}`;
         } else if (enableReplayGain) {
@@ -90,29 +79,32 @@ export class FFMpegAudioExportService implements AudioExportService {
         }
         if (format === `SP`) {
             const outFileName = `${this.outFileNameNoExt}.raw`;
-            await this.ffmpegProcess.transcode(this.inFileName, outFileName, `${additionalCommands} ${commonFormatting} -f s16be`);
+            await this.ffmpegProcess.transcode(this.inFileName, outFileName, `${additionalCommands} -ac 2 -ar 44100 -f s16be`);
             let { data } = await this.ffmpegProcess.read(outFileName);
             result = data.buffer;
         } else {
-            const outFileName = `${this.outFileNameNoExt}.wav`;
-            await this.ffmpegProcess.transcode(this.inFileName, outFileName, `${additionalCommands} ${commonFormatting} -f wav`);
-            let { data } = await this.ffmpegProcess.read(outFileName);
-            let bitrate: string = `0`;
-            switch (format) {
-                case `LP2`:
-                    bitrate = `128`;
-                    break;
-                case `LP105`:
-                    bitrate = `102`;
-                    break;
-                case `LP4`:
-                    bitrate = `64`;
-                    break;
-            }
-            result = await this.atracdencProcess!.encode(data.buffer, bitrate);
+            let { data } = await this.ffmpegProcess.read(this.inFileName);
+
+            const payload = new FormData();
+            payload.append('file', new Blob([data.buffer]), this.originalFileName);
+            const encodingURL = new URL(this.address);
+            if (!encodingURL.pathname.endsWith('/'))
+                encodingURL.pathname += '/';
+            encodingURL.pathname += 'transcode';
+            encodingURL.searchParams.set('type', format);
+            if (loudnessTarget !== undefined) encodingURL.searchParams.set('loudnessTarget', loudnessTarget.toString());
+            if (enableReplayGain !== undefined) encodingURL.searchParams.set('applyReplaygain', enableReplayGain.toString());
+            let response = await fetch(encodingURL.href, {
+                method: 'POST',
+                body: payload,
+            });
+            const source = await response.arrayBuffer();
+            const content = new Uint8Array(source);
+            const file = new File([content], 'test.at3');
+            let headerLength = (await getATRACWAVEncoding(file))!.headerLength;
+            result = source.slice(headerLength);
         }
         this.ffmpegProcess.worker.terminate();
-        this.atracdencProcess!.terminate();
         return result;
     }
 }

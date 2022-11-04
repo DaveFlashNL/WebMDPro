@@ -51,7 +51,7 @@ const useStyles = makeStyles(theme => ({
     },
 }));
 
-export const TopMenu = function(props: { onClick?: () => void }) {
+export const TopMenu = function (props: { onClick?: () => void }) {
     const classes = useStyles();
     const dispatch = useDispatch();
 
@@ -185,13 +185,11 @@ export const TopMenu = function(props: { onClick?: () => void }) {
         handleMenuClose();
     }, [dispatch, handleMenuClose]);
 
-    const handleToggleExploitsInMainUI = useCallback(() => {
+    const handleToggleFactoryModeRippingInMainUi = useCallback(() => {
         if (factoryModeRippingInMainUi) {
             dispatch(appActions.setFactoryModeRippingInMainUi(false));
-            //add in SP speedup download
         } else {
             dispatch(enableFactoryRippingModeInMainUi());
-            //add in SP speedup download
         }
         handleMenuClose();
     }, [dispatch, factoryModeRippingInMainUi, handleMenuClose]);
@@ -313,47 +311,23 @@ export const TopMenu = function(props: { onClick?: () => void }) {
             </MenuItem>
         );
         if (isCapable(Capability.factoryMode)) {
-            /* possible future addition: add in SP speedup upload? to same toggle function for supported devices */
             menuItems.push(
-                <MenuItem key="factoryUnify" onClick={handleToggleExploitsInMainUI}>
+                <MenuItem key="factoryUnify" onClick={handleToggleFactoryModeRippingInMainUi}>
                     <ListItemIcon className={classes.listItemIcon}>
-                        {MainUIExploits ? <ToggleOnIcon fontSize="small" /> : <ToggleOffIcon fontSize="small" />}
+                        {factoryModeRippingInMainUi ? <ToggleOnIcon fontSize="small" /> : <ToggleOffIcon fontSize="small" />}
                     </ListItemIcon>
                     <ListItemText>
-                        {MainUIExploits ? `Disable ` : `Enable `}
+                        {factoryModeRippingInMainUi ? `Disable ` : `Enable `}
                         <Tooltip
-                            title="This feature enables advanced RH1-style ripping and uploads inside the main interface. The homebrew mode's notice still applies."
+                            title="This advanced feature enables RH1-style ripping from the main ui. The homebrew mode's notice still applies."
                             arrow
                         >
-                            <span className={classes.toolTippedText}>Enable exploits</span>
+                            <span className={classes.toolTippedText}>Exploit Ripper</span>
                         </Tooltip>
                     </ListItemText>
                 </MenuItem>
             );
         }
-        /*^ code to be combined:
-
-        const handleToggleSPUploadSpeedup = useCallback(() => {
-        dispatch(toggleSPUploadSpeedup());
-        handleMenuClose();
-    }, [dispatch, handleMenuClose]);
-
-        <MenuItem
-            key="speedupSP"
-            onClick={handleToggleSPUploadSpeedup}
-            disabled={!exploitCapabilities.includes(ExploitCapability.spUploadSpeedup)}
-        >
-            <ListItemIcon className={classes.listItemIcon}>
-                {spUploadSpeedupActive ? <ToggleOnIcon fontSize="small" /> : <ToggleOffIcon fontSize="small" />}
-            </ListItemIcon>
-            <ListItemText>
-                {spUploadSpeedupActive ? `Disable ` : `Enable `}
-                <Tooltip title="On some devices, this can speed up SP upload" arrow>
-                    <span className={classes.toolTippedText}>SP Upload Speedup</span>
-                </Tooltip>
-            </ListItemText>
-        </MenuItem>
-        */
     }
     menuItems.push(
         <MenuItem key="darkMode" onClick={handleDarkMode}>
@@ -364,7 +338,7 @@ export const TopMenu = function(props: { onClick?: () => void }) {
             <ListItemText>Dark Mode</ListItemText>
         </MenuItem>
     );
-    /*if (mainView === 'MAIN') {
+    if (mainView === 'MAIN') {
         menuItems.push(
             <MenuItem key="vintageMode" onClick={handleVintageMode}>
                 <ListItemIcon className={classes.listItemIcon}>
@@ -384,7 +358,7 @@ export const TopMenu = function(props: { onClick?: () => void }) {
                 </MenuItem>
             );
         }
-    }*/
+    }
     if (mainView === 'MAIN') {
         menuItems.push(<Divider key="feature-divider" />);
     }
@@ -440,7 +414,7 @@ export const TopMenu = function(props: { onClick?: () => void }) {
             <ListItemText>
                 <Link
                     rel="noopener noreferrer"
-                    href="https://github.com/asivery/webminidisc"
+                    href="https://github.com/DaveFlashNL/WebMDPro"
                     target="_blank"
                     ref={githubLinkRef}
                     onClick={handleGithubLink}

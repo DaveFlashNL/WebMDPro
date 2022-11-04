@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { useShallowEqualSelector } from '../utils';
 import { actions as renameDialogActions } from '../redux/rename-dialog-feature';
+import { actions as appActions } from '../redux/app-feature';
 import { renameTrack, renameDisc, renameGroup, renameInConvertDialog } from '../redux/actions';
 
 import { makeStyles } from '@material-ui/core/styles';
@@ -14,6 +15,9 @@ import Slide from '@material-ui/core/Slide';
 import Button from '@material-ui/core/Button';
 import { TransitionProps } from '@material-ui/core/transitions';
 import { W95RenameDialog } from './win95/rename-dialog';
+import { Link, Typography } from '@material-ui/core';
+import { batchActions } from 'redux-batched-actions';
+import { sanitizeFullWidthTitle } from 'netmd-js/dist/utils';
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement<any, any> },
@@ -101,7 +105,7 @@ export const RenameDialog = (props: {}) => {
 
     const handleFullWidthChange = useCallback(
         (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-            dispatch(renameDialogActions.setCurrentFullWidthName(event.target.value.substring(0, 105)));
+            dispatch(renameDialogActions.setCurrentFullWidthName(sanitizeFullWidthTitle(event.target.value.substring(0, 105))));
         },
         [dispatch]
     );
@@ -115,6 +119,19 @@ export const RenameDialog = (props: {}) => {
             }
         },
         [handleDoRename]
+    );
+
+    const handleSwitchToFullWidth = useCallback(
+        (event: React.MouseEvent) => {
+            dispatch(
+                batchActions([
+                    appActions.setFullWidthSupport(true),
+                    renameDialogActions.setCurrentFullWidthName(sanitizeFullWidthTitle(renameDialogTitle)),
+                    renameDialogActions.setCurrentName(''),
+                ])
+            );
+        },
+        [renameDialogTitle, dispatch]
     );
 
     const { vintageMode } = useShallowEqualSelector(state => state.appState);
@@ -142,6 +159,24 @@ export const RenameDialog = (props: {}) => {
         >
             <DialogTitle id="rename-dialog-title">Rename {what}</DialogTitle>
             <DialogContent>
+                {!allowFullWidth &&
+                    renameDialogTitle
+                        .split('')
+                        .map(n => n.charCodeAt(0))
+                        .filter(
+                            n =>
+                                (n >= 0x3040 && n <= 0x309f) || // Hiragana
+                                (n >= 0x4e00 && n <= 0x9faf) || // Kanji
+                                (n >= 0x3400 && n <= 0x4dbf) // Rare kanji
+                        ).length ? (
+                    <Typography color="error" component="p">
+                        You seem to be trying to enter full-width text into the half-width slot.{' '}
+                        <Link onClick={handleSwitchToFullWidth} color="error" underline="always" style={{ cursor: 'pointer' }}>
+                            Enable full-width title editing
+                        </Link>
+                        ?
+                    </Typography>
+                ) : null}
                 <TextField
                     autoFocus
                     id="name"

@@ -30,7 +30,7 @@ export const W95ConvertDialog = (props: {
     titleFormat: TitleFormatType;
     titles: { title: string; fullWidthTitle: string }[];
     loadingMetadata: boolean;
-    availableCharacters: number;
+    availableCharacters: { halfWidth: number; fullWidth: number };
     availableSeconds: number;
     selectedTrackIndex: number;
     renameTrackManually: (index: number) => void;
@@ -110,7 +110,10 @@ export const W95ConvertDialog = (props: {
                             />
                         </Fieldset>
                     </div>
-                    <p hidden={props.availableCharacters > 0} style={{ marginTop: '1em' }}>
+                    <p
+                        hidden={props.availableCharacters.halfWidth > 0 && props.availableCharacters.fullWidth > 0}
+                        style={{ marginTop: '1em' }}
+                    >
                         Warning: You have used up all the available characters. Some titles might get cut off.
                     </p>
                     <p hidden={props.availableSeconds >= 0} style={{ marginTop: '1em' }}>
@@ -153,9 +156,8 @@ export const W95ConvertDialog = (props: {
                     ) : null}
 
                     <DialogFooter>
-                        <Button disabled={props.loadingMetadata} onClick={props.handleToggleTracksOrder}>{`${
-                            props.tracksOrderVisible ? 'Hide' : 'Show'
-                        } Tracks`}</Button>
+                        <Button disabled={props.loadingMetadata} onClick={props.handleToggleTracksOrder}>{`${props.tracksOrderVisible ? 'Hide' : 'Show'
+                            } Tracks`}</Button>
                         <div style={{ flex: '1 1 auto' }}></div>
                         <FooterButton disabled={props.loadingMetadata || props.availableSeconds < 0} onClick={props.handleConvert}>
                             OK

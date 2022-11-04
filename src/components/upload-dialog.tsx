@@ -109,7 +109,7 @@ export const UploadDialog = (props: {}) => {
             aria-labelledby="alert-dialog-slide-title"
             aria-describedby="alert-dialog-slide-description"
         >
-            <DialogTitle id="alert-dialog-slide-title">Processing...</DialogTitle>
+            <DialogTitle id="alert-dialog-slide-title">Uploading...</DialogTitle>
             <DialogContent>
                 <DialogContentText id="alert-dialog-slide-description">
                     {convertedValue === 100 && trackConverting === trackTotal
@@ -125,7 +125,7 @@ export const UploadDialog = (props: {}) => {
                 <Box className={classes.progressPerc}>{convertedValue}%</Box>
 
                 <DialogContentText id="alert-dialog-slide-description" className={classes.uploadLabel}>
-                    Uploading {trackCurrent} of {trackTotal}: {titleCurrent}
+                    Burning {trackCurrent} of {trackTotal}: {titleCurrent}
                 </DialogContentText>
                 <LinearProgress
                     className={classes.progressBar}
@@ -147,7 +147,7 @@ export const UploadDialog = (props: {}) => {
                 ) : null}
                 <div className={classes.spacer}></div>
                 <Button disabled={cancelled} onClick={handleCancelUpload}>
-                    {cancelled ? `Stopping after current track...` : `Cancel`}
+                    {cancelled ? `Stopping after current track...` : `Cancel Recording`}
                 </Button>
             </DialogActions>
         </Dialog>

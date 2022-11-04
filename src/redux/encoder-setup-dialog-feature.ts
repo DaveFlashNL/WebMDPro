@@ -2,29 +2,29 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { enableBatching } from 'redux-batched-actions';
 import { CustomParameters } from '../custom-parameters';
 
-export interface OtherDeviceDialogState {
+export interface EncoderSetupDialogState {
     visible: boolean;
     selectedServiceIndex: number;
     customParameters: CustomParameters;
 }
 
-const initialState: OtherDeviceDialogState = {
+const initialState: EncoderSetupDialogState = {
     visible: false,
     selectedServiceIndex: 0,
     customParameters: {},
 };
 
 export const slice = createSlice({
-    name: 'otherDeviceDialog',
+    name: 'encoderSetupDialog',
     initialState,
     reducers: {
-        setVisible: (state: OtherDeviceDialogState, action: PayloadAction<boolean>) => {
+        setVisible: (state: EncoderSetupDialogState, action: PayloadAction<boolean>) => {
             state.visible = action.payload;
         },
-        setSelectedServiceIndex: (state: OtherDeviceDialogState, action: PayloadAction<number>) => {
+        setSelectedServiceIndex: (state: EncoderSetupDialogState, action: PayloadAction<number>) => {
             state.selectedServiceIndex = action.payload;
         },
-        setCustomParameters: (state: OtherDeviceDialogState, action: PayloadAction<CustomParameters>) => {
+        setCustomParameters: (state: EncoderSetupDialogState, action: PayloadAction<CustomParameters>) => {
             state.customParameters = action.payload;
         },
     },

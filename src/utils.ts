@@ -1,4 +1,4 @@
-import { Disc, formatTimeFromFrames, Encoding, Group } from 'netmd-js';
+import { Disc, formatTimeFromFrames, Encoding, Group, Track } from 'netmd-js';
 import { useSelector, shallowEqual } from 'react-redux';
 import { RootState } from './redux/store';
 import { Mutex } from 'async-mutex';
@@ -113,9 +113,17 @@ export async function getATRACWAVEncoding(file: File): Promise<{ format: 'LP2' |
     const channels = Buffer.from(fileData.slice(22, 24)).readUInt16LE(0);
     if (wavType !== 0x270 || channels !== 0x02) return null; // Not ATRAC3
 
-    const formatSectionSize = Buffer.from(fileData.slice(16, 20)).readUInt32LE(0);
-
-    const headerLength = 20 + formatSectionSize + 8;
+    let headerLength = 12;
+    while (headerLength < fileData.byteLength) {
+        const chunkType = Buffer.from(fileData.slice(headerLength, headerLength + 4)).toString();
+        const chunkSize = Buffer.from(fileData.slice(headerLength + 4, headerLength + 8)).readUInt32LE(0);
+        if (chunkType === 'data') {
+            headerLength = headerLength + 8;
+            break;
+        } else {
+            headerLength = headerLength + chunkSize + 8;
+        }
+    }
 
     const bytesSampleRate = Buffer.from(fileData.slice(24, 28)).readUInt32LE(0);
     const bytesPerFrame = Buffer.from(fileData.slice(32, 34)).readUInt16LE(0) / 2;
@@ -188,8 +196,9 @@ export function timeToSeekArgs(timeInSecs: number): number[] {
 }
 
 export function secondsToNormal(time: number): string {
-    const [h, m, s] = timeToSeekArgs(time);
-    return `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    let negative = time < 0;
+    const [h, m, s] = timeToSeekArgs(Math.abs(time));
+    return `${negative ? '-' : ''}${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
 export const EncodingName: { [k: number]: string } = {
@@ -351,7 +360,7 @@ export function isSequential(numbers: number[]) {
 export function asyncMutex(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
     // This is meant to be used only with classes having a "mutex" instance property
     const oldValue = descriptor.value;
-    descriptor.value = async function(...args: any) {
+    descriptor.value = async function (...args: any) {
         const mutex = (this as any).mutex as Mutex;
         const release = await mutex.acquire();
         try {
@@ -403,6 +412,22 @@ export function downloadBlob(buffer: Blob, fileName: string) {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+}
+
+export function createDownloadTrackName(track: Track) {
+    let title;
+    if (track.title) {
+        title = `${track.index + 1}. ${track.title}`;
+        if (track.fullWidthTitle) {
+            title += ` (${track.fullWidthTitle})`;
+        }
+    } else if (track.fullWidthTitle) {
+        title = `${track.index + 1}. ${track.fullWidthTitle}`;
+    } else {
+        title = `Track ${track.index + 1}`;
+    }
+    const fileName = title + ([Encoding.lp2, Encoding.lp4].includes(track.encoding) ? '.wav' : '.aea');
+    return fileName;
 }
 
 declare let process: any;

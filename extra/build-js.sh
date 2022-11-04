@@ -72,6 +72,7 @@ configure_ffmpeg() {
   \
   --disable-demuxers \
   --enable-demuxer=alac \
+  --enable-demuxer=aea \
   --enable-demuxer=ffmetadata \
   --enable-demuxer=aiff \
   --enable-demuxer=oma \
@@ -131,6 +132,8 @@ configure_ffmpeg() {
   \
   --disable-decoders \
   --enable-decoder=alac \
+  --enable-decoder=atrac1 \
+  --enable-decoder=atrac3 \
   --enable-decoder=opus \
   --enable-decoder=aac \
   --enable-decoder=ac3 \

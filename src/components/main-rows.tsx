@@ -3,7 +3,7 @@ import clsx from 'clsx';
 
 import { EncodingName } from '../utils';
 
-import { formatTimeFromFrames, Track, Group } from 'netmd-js';
+import { formatTimeFromFrames, Track, Group, Channels } from 'netmd-js';
 
 import { makeStyles } from '@material-ui/core/styles';
 import TableCell from '@material-ui/core/TableCell';
@@ -64,6 +64,15 @@ const useStyles = makeStyles(theme => ({
         verticalAlign: 'middle',
         width: theme.spacing(4.5),
         marginRight: theme.spacing(0.5),
+    },
+    channelBadge: {
+        position: 'static',
+        display: 'inline-flex',
+        padding: '0 4px',
+        verticalAlign: 'middle',
+        userSelect: 'none',
+        marginRight: theme.spacing(0.5),
+        color: theme.palette.text.secondary,
     },
     durationCell: {
         whiteSpace: 'nowrap',
@@ -145,10 +154,7 @@ export function TrackRow({
         onRename,
         isCapable,
     ]);
-    const handleSelect = useCallback(event => onSelect(event, track.index), [
-        track.index,
-        onSelect,
-    ]);
+    const handleSelect = useCallback(event => onSelect(event, track.index), [track.index, onSelect]);
     const handlePlayPause: React.MouseEventHandler = useCallback(
         event => {
             event.stopPropagation();
@@ -174,11 +180,7 @@ export function TrackRow({
                 [classes.currentTrackRow]: isPlayingOrPaused,
             })}
         >
-            <TableCell
-                className={classes.dragHandle}
-                {...(isCapable(Capability.metadataEdit) ? draggableProvided.dragHandleProps : {})}
-                onClick={event => event.stopPropagation()}
-            >
+            <TableCell className={classes.dragHandle} {...draggableProvided.dragHandleProps} onClick={event => event.stopPropagation()}>
                 <DragIndicator fontSize="small" color="disabled" />
             </TableCell>
             <TableCell className={classes.indexCell}>
@@ -202,6 +204,9 @@ export function TrackRow({
                 {track.title || `No Title`}
             </TableCell>
             <TableCell align="right" className={classes.durationCell}>
+                {EncodingName[track.encoding] === 'SP' && track.channel === Channels.mono && (
+                    <span className={classes.channelBadge}>MONO</span>
+                )}
                 <span className={classes.formatBadge}>{EncodingName[track.encoding]}</span>
                 <span className={classes.durationCellTime}>{formatTimeFromFrames(track.duration, false)}</span>
             </TableCell>
@@ -213,10 +218,12 @@ interface GroupRowProps {
     group: Group;
     onRename: (event: React.MouseEvent, groupIdx: number) => void;
     onDelete: (event: React.MouseEvent, groupIdx: number) => void;
+    onSelect: (event: React.MouseEvent, groupIdx: number) => void;
     isCapable: (c: Capability) => boolean;
+    isSelected: boolean;
 }
 
-export function GroupRow({ group, onRename, onDelete, isCapable }: GroupRowProps) {
+export function GroupRow({ group, onRename, onDelete, isCapable, onSelect, isSelected }: GroupRowProps) {
     const classes = useStyles();
 
     const handleDelete = useCallback((event: React.MouseEvent) => isCapable(Capability.metadataEdit) && onDelete(event, group.index), [
@@ -229,8 +236,15 @@ export function GroupRow({ group, onRename, onDelete, isCapable }: GroupRowProps
         group,
         isCapable,
     ]);
+    const handleSelect = useCallback((event: React.MouseEvent) => onSelect(event, group.index), [onSelect, group]);
     return (
-        <TableRow hover className={clsx({ [classes.groupHeadRow]: isCapable(Capability.metadataEdit) })} onDoubleClick={handleRename}>
+        <TableRow
+            hover
+            selected={isSelected}
+            className={clsx({ [classes.groupHeadRow]: isCapable(Capability.metadataEdit) })}
+            onDoubleClick={handleRename}
+            onClick={handleSelect}
+        >
             <TableCell className={classes.dragHandleEmpty}></TableCell>
             <TableCell className={classes.indexCell}>
                 <FolderIcon className={clsx(classes.controlButtonInTrackCommon, classes.groupFolderIcon)} />

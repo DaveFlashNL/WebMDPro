@@ -8,14 +8,15 @@ import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import TextField from '@material-ui/core/TextField';
 import Slide from '@material-ui/core/Slide';
 import Button from '@material-ui/core/Button';
 import { TransitionProps } from '@material-ui/core/transitions';
-import { Checkbox, FormControlLabel, MenuItem, Select } from '@material-ui/core';
-import { CustomParameterInfo, CustomParameters, Services, initializeParameters } from '../services/service-manager';
+import { MenuItem, Select } from '@material-ui/core';
+import { Services } from '../services/service-manager';
 import { batchActions } from 'redux-batched-actions';
 import { addService } from '../redux/actions';
+import { isAllValid, initializeParameters } from '../custom-parameters';
+import { renderCustomParameter } from './custom-parameters-renderer';
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement<any, any> },
@@ -65,78 +66,12 @@ export const OtherDeviceDialog = (props: {}) => {
 
     const [addButtonDisabled, setAddButtonDisabled] = useState(false);
 
-    const getFieldForType = (parameter: CustomParameterInfo) => {
-        switch (parameter.type) {
-            case 'boolean':
-                return (
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                checked={(otherDeviceDialogCustomParameters[parameter.varName] as boolean) || false}
-                                onChange={e => handleParameterChange(e, parameter.type, parameter.varName)}
-                            />
-                        }
-                        label={parameter.userFriendlyName}
-                        className={classes.fullWidth}
-                        key={parameter.varName}
-                    />
-                );
-            case 'string':
-                return (
-                    <TextField
-                        key={parameter.varName}
-                        label={parameter.userFriendlyName}
-                        error={
-                            parameter.validator
-                                ? !parameter.validator(otherDeviceDialogCustomParameters[parameter.varName] as string)
-                                : false
-                        }
-                        value={otherDeviceDialogCustomParameters[parameter.varName] || ''}
-                        onChange={e => handleParameterChange(e, parameter.type, parameter.varName)}
-                        className={classes.fullWidth}
-                    />
-                );
-            case 'number':
-                return (
-                    <TextField
-                        label={parameter.userFriendlyName}
-                        error={
-                            parameter.validator
-                                ? !parameter.validator(otherDeviceDialogCustomParameters[parameter.varName] as string)
-                                : false
-                        }
-                        type="number"
-                        value={otherDeviceDialogCustomParameters[parameter.varName] || 0}
-                        onChange={e => handleParameterChange(e, parameter.type, parameter.varName)}
-                        className={classes.fullWidth}
-                        key={parameter.varName}
-                    />
-                );
-        }
-    };
-
-    const isAllValid = useCallback(
-        (parameters: CustomParameters) => {
-            let allValid = true;
-            for (let parameter of currentService.customParameters!) {
-                if (parameter.validator) {
-                    if (!parameter.validator(parameters[parameter.varName]?.toString())) {
-                        allValid = false;
-                        break;
-                    }
-                }
-            }
-            setAddButtonDisabled(!allValid);
-        },
-        [setAddButtonDisabled, currentService.customParameters]
-    );
-
     const handleServiceSelectionChanged = useCallback(
         event => {
             dispatch(
                 batchActions([
                     otherDeviceActions.setSelectedServiceIndex(event.target.value),
-                    otherDeviceActions.setCustomParameters(initializeParameters(customServices[event.target.value])),
+                    otherDeviceActions.setCustomParameters(initializeParameters(customServices[event.target.value].customParameters)),
                 ])
             );
         },
@@ -144,17 +79,18 @@ export const OtherDeviceDialog = (props: {}) => {
     );
 
     const handleParameterChange = useCallback(
-        (event, type, varName) => {
+        (varName, value) => {
             const newData = { ...otherDeviceDialogCustomParameters };
-            newData[varName] =
-                type === 'string' ? event.target.value : type === 'number' ? parseInt(event.target.value) : event.target.checked;
+            newData[varName] = value;
             dispatch(otherDeviceActions.setCustomParameters(newData));
-            isAllValid(newData);
         },
-        [dispatch, otherDeviceDialogCustomParameters, isAllValid]
+        [dispatch, otherDeviceDialogCustomParameters]
     );
 
-    useEffect(() => isAllValid(otherDeviceDialogCustomParameters), [otherDeviceDialogCustomParameters, isAllValid]);
+    useEffect(() => setAddButtonDisabled(!isAllValid(currentService.customParameters!, otherDeviceDialogCustomParameters)), [
+        otherDeviceDialogCustomParameters,
+        currentService.customParameters,
+    ]);
 
     return (
         <Dialog
@@ -180,7 +116,11 @@ export const OtherDeviceDialog = (props: {}) => {
                     ))}
                 </Select>
                 {currentService.description}
-                <div className={classes.fullWidth}>{currentService.customParameters!.map(n => getFieldForType(n))}</div>
+                <div className={classes.fullWidth}>
+                    {currentService.customParameters!.map(n =>
+                        renderCustomParameter(n, otherDeviceDialogCustomParameters[n.varName], handleParameterChange)
+                    )}
+                </div>
             </DialogContent>
             <DialogActions>
                 <Button onClick={handleClose}>Cancel</Button>

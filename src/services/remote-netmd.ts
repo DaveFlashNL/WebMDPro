@@ -127,8 +127,8 @@ export class NetMDRemoteService implements NetMDService {
     }
 
     @asyncMutex
-    async addGroup(groupBegin: number, groupLength: number, title: string) {
-        return await this.getFromServer('addGroup', { groupBegin, groupLength, title });
+    async addGroup(groupBegin: number, groupLength: number, title: string, fullWidthTitle: string = '') {
+        return await this.getFromServer('addGroup', { groupBegin, groupLength, title, fullWidthTitle });
     }
 
     @asyncMutex
@@ -166,8 +166,8 @@ export class NetMDRemoteService implements NetMDService {
         return await this.getFromServer('moveTrack', { src, dst });
     }
 
-    async prepareUpload() {}
-    async finalizeUpload() {}
+    async prepareUpload() { }
+    async finalizeUpload() { }
 
     @asyncMutex
     upload(

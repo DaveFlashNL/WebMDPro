@@ -38,6 +38,7 @@ export const W95Controls = (props: {
     handleNext: () => void;
     isCapable: (c: Capability) => boolean;
     message: string;
+    loading: boolean;
     discPresent: boolean;
     classes: any;
     lcdScroll: number;
@@ -49,19 +50,19 @@ export const W95Controls = (props: {
         <div className={classes.container}>
             {props.isCapable(Capability.playbackControl) && (
                 <React.Fragment>
-                    <Button onClick={props.handlePrev}>
+                    <Button disabled={!props.discPresent} onClick={props.handlePrev}>
                         <SkipPreviousIcon />
                     </Button>
-                    <Button onClick={props.handlePlay}>
+                    <Button disabled={!props.discPresent} onClick={props.handlePlay}>
                         <PlayArrowIcon />
                     </Button>
-                    <Button onClick={props.handlePause}>
+                    <Button disabled={!props.discPresent} onClick={props.handlePause}>
                         <PauseIcon />
                     </Button>
-                    <Button onClick={props.handleStop}>
+                    <Button disabled={!props.discPresent} onClick={props.handleStop}>
                         <StopIcon />
                     </Button>
-                    <Button onClick={props.handleNext} style={{ marginRight: 16 }}>
+                    <Button disabled={!props.discPresent} onClick={props.handleNext} style={{ marginRight: 16 }}>
                         <SkipNextIcon />
                     </Button>
                 </React.Fragment>
@@ -75,14 +76,14 @@ export const W95Controls = (props: {
                         style={
                             props.message && props.lcdScroll > 0
                                 ? {
-                                      animationDuration: `${props.lcdScrollDuration}s`,
-                                      transform: `translate(-${props.lcdScroll}%)`,
-                                      top: 12,
-                                  }
+                                    animationDuration: `${props.lcdScrollDuration}s`,
+                                    transform: `translate(-${props.lcdScroll}%)`,
+                                    top: 12,
+                                }
                                 : { top: 12 }
                         }
                     >
-                        {props.message}
+                        {props.discPresent ? props.message : props.loading ? 'LOADING...' : 'NO DISC'}
                     </span>
                 </div>
             </Panel>

@@ -25,9 +25,9 @@ class NetMDMockService implements NetMDService {
             duration: 5 * 60 * 512,
             encoding: Encoding.sp,
             index: 1,
-            channel: Channels.stereo,
+            channel: Channels.mono,
             protected: TrackFlag.unprotected,
-            title: 'Mock Track 2',
+            title: 'Mock Track 2 (mono)',
             fullWidthTitle: '',
         },
         {
@@ -64,19 +64,19 @@ class NetMDMockService implements NetMDService {
         fullWidthTitle: string | null;
         tracksIdx: number[];
     }[] = [
-        {
-            title: null,
-            fullWidthTitle: '',
-            index: 0,
-            tracksIdx: [2, 3, 4],
-        },
-        {
-            title: 'Test',
-            fullWidthTitle: '',
-            index: 1,
-            tracksIdx: [0, 1],
-        },
-    ];
+            {
+                title: null,
+                fullWidthTitle: '',
+                index: 0,
+                tracksIdx: [2, 3, 4],
+            },
+            {
+                title: 'Test',
+                fullWidthTitle: '',
+                index: 1,
+                tracksIdx: [0, 1],
+            },
+        ];
 
     private capabilities: Capability[] = [];
 
@@ -179,7 +179,7 @@ class NetMDMockService implements NetMDService {
         }
     }
 
-    async addGroup(groupBegin: number, groupLength: number, newName: string) {
+    async addGroup(groupBegin: number, groupLength: number, newName: string, fullWidthTitle: string = '') {
         let ungroupedDefs = this._groupsDef.find(g => g.title === null);
         if (!ungroupedDefs) {
             return; // You can only group tracks that aren't already in a different group, if there's no such tracks, there's no point to continue
@@ -193,7 +193,7 @@ class NetMDMockService implements NetMDService {
 
         const newGroupDef = {
             title: newName,
-            fullWidthTitle: '',
+            fullWidthTitle,
             index: groupBegin,
             tracksIdx: newGroupTracks,
         };
@@ -244,7 +244,9 @@ class NetMDMockService implements NetMDService {
         return `Generic MD Unit`;
     }
 
-    async finalize() {}
+    async finalize() { }
+    async prepareUpload() { }
+    async finalizeUpload() { }
 
     async renameTrack(index: number, newTitle: string, fullWidthTitle?: string) {
         newTitle = sanitizeHalfWidthTitle(newTitle);
@@ -432,16 +434,16 @@ class NetMDFactoryMockService implements NetMDFactoryService {
     }
 
     async readUTOCSector(index: number) {
-        return this.utoc[index];
+        return this.utoc[index] ?? new Uint8Array(Array(2352).fill(0));
     }
 
     async writeUTOCSector(index: number, data: Uint8Array) {
         this.utoc[index] = new Uint8Array(data);
     }
 
-    async runTetris(): Promise<void> {}
+    async runTetris(): Promise<void> { }
 
-    async flushUTOCCacheToDisc() {}
+    async flushUTOCCacheToDisc() { }
 
     async readFirmware(callback: (progress: { type: 'RAM' | 'ROM'; readBytes: number; totalBytes: number }) => void) {
         return new Uint8Array(Buffer.from('***MOCK DATA***'));
@@ -453,10 +455,13 @@ class NetMDFactoryMockService implements NetMDFactoryService {
 
     async exploitDownloadTrack(
         track: number,
-        callback: (progress: { sectorsRead: number; totalSectors: number; action: 'READ' | 'SEEK'; sector?: string }) => void
+        callback: (data: { read: number; total: number; action: 'READ' | 'SEEK' | 'CHUNK'; sector?: string }) => void,
+        config?: any
     ): Promise<Uint8Array> {
         return new Uint8Array(Buffer.from('***MOCK DATA***'));
     }
+
+    async setSPSpeedupActive(newState: boolean) { }
 }
 
 export { NetMDMockService };

@@ -12,7 +12,7 @@ import {
     DroppableProvided,
     DroppableStateSnapshot,
 } from 'react-beautiful-dnd';
-import { listContent, deleteTracks, moveTrack, groupTracks, deleteGroup, dragDropTrack } from '../redux/actions';
+import { listContent, deleteTracks, moveTrack, groupTracks, deleteGroups, dragDropTrack, ejectDisc } from '../redux/actions';
 import { actions as renameDialogActions } from '../redux/rename-dialog-feature';
 import { actions as convertDialogActions } from '../redux/convert-dialog-feature';
 import { actions as dumpDialogActions } from '../redux/dump-dialog-feature';
@@ -32,6 +32,7 @@ import DeleteIcon from '@material-ui/icons/Delete';
 import EditIcon from '@material-ui/icons/Edit';
 import Backdrop from '@material-ui/core/Backdrop';
 import CreateNewFolderIcon from '@material-ui/icons/CreateNewFolder';
+import EjectIcon from '@material-ui/icons/Eject';
 
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -60,6 +61,11 @@ import { W95Main } from './win95/main';
 import { useMemo } from 'react';
 import { ChangelogDialog } from './changelog-dialog';
 import { Capability } from '../services/netmd';
+import { LinearProgress } from '@material-ui/core';
+import { FactoryModeNoticeDialog } from './factory/factory-notice-dialog';
+import { FactoryModeProgressDialog } from './factory/factory-progress-dialog';
+import { SongRecognitionDialog } from './song-recognition-dialog';
+import { SongRecognitionProgressDialog } from './song-recognition-progress-dialog';
 
 const useStyles = makeStyles(theme => ({
     add: {
@@ -83,7 +89,7 @@ const useStyles = makeStyles(theme => ({
         },
     },
     toolbar: {
-        marginTop: theme.spacing(3),
+        marginTop: theme.spacing(2),
         marginLeft: theme.spacing(-2),
         marginRight: theme.spacing(-2),
         [theme.breakpoints.up(600 + theme.spacing(2) * 2)]: {
@@ -153,9 +159,11 @@ export const Main = (props: {}) => {
     const deviceName = useShallowEqualSelector(state => state.main.deviceName);
     const deviceStatus = useShallowEqualSelector(state => state.main.deviceStatus);
     const deviceCapabilities = useShallowEqualSelector(state => state.main.deviceCapabilities);
+    const factoryModeRippingInMainUi = useShallowEqualSelector(state => state.appState.factoryModeRippingInMainUi);
     const { vintageMode } = useShallowEqualSelector(state => state.appState);
 
     const [selected, setSelected] = React.useState<number[]>([]);
+    const [selectedGroups, setSelectedGroups] = React.useState<number[]>([]);
     const [uploadedFiles, setUploadedFiles] = React.useState<File[]>([]);
     const [lastClicked, setLastClicked] = useState(-1);
     const [moveMenuAnchorEl, setMoveMenuAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -204,15 +212,19 @@ export const Main = (props: {}) => {
 
     const onDrop = useCallback(
         (acceptedFiles: File[], rejectedFiles: File[]) => {
-            setUploadedFiles(acceptedFiles);
-            dispatch(convertDialogActions.setVisible(true));
+            const bannedTypes = ['audio/mpegurl', 'audio/x-mpegurl'];
+            const accepted = acceptedFiles.filter(n => !bannedTypes.includes(n.type));
+            if (accepted.length > 0) {
+                setUploadedFiles(accepted);
+                dispatch(convertDialogActions.setVisible(true));
+            }
         },
         [dispatch]
     );
 
     const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
         onDrop,
-        accept: [`audio/*`, `video/mp4`],
+        accept: [`audio/*`, `video/mp4`, `video/webm`, `.oma`, `.at3`],
         noClick: true,
     });
 
@@ -223,6 +235,7 @@ export const Main = (props: {}) => {
     // Action Handlers
     const handleSelectTrackClick = useCallback(
         (event: React.MouseEvent, item: number) => {
+            setSelectedGroups([]);
             if (event.shiftKey && selected.length && lastClicked !== -1) {
                 let rangeBegin = Math.min(lastClicked + 1, item),
                     rangeEnd = Math.max(lastClicked - 1, item);
@@ -244,15 +257,28 @@ export const Main = (props: {}) => {
         [selected, setSelected, lastClicked, setLastClicked]
     );
 
+    const handleSelectGroupClick = useCallback(
+        (event: React.MouseEvent, item: number) => {
+            setSelected([]);
+            if (selectedGroups.includes(item)) {
+                setSelectedGroups(selectedGroups.filter(i => i !== item));
+            } else {
+                setSelectedGroups([...selectedGroups, item]);
+            }
+        },
+        [selectedGroups, setSelected, setSelectedGroups]
+    );
+
     const handleSelectAllClick = useCallback(
         (event: React.ChangeEvent<HTMLInputElement>) => {
+            setSelectedGroups([]);
             if (selected.length < tracks.length) {
                 setSelected(tracks.map(t => t.index));
             } else {
                 setSelected([]);
             }
         },
-        [selected, tracks]
+        [selected, tracks, setSelected, setSelectedGroups]
     );
 
     const handleRenameTrack = useCallback(
@@ -321,9 +347,40 @@ export const Main = (props: {}) => {
 
     const handleDeleteGroup = useCallback(
         (event: React.MouseEvent, index: number) => {
-            dispatch(deleteGroup(index));
+            dispatch(deleteGroups([index]));
         },
         [dispatch]
+    );
+
+    const handleDeleteSelectedGroups = useCallback(
+        (event: React.MouseEvent) => {
+            dispatch(deleteGroups(selectedGroups));
+            setSelectedGroups([]);
+        },
+        [dispatch, selectedGroups, setSelectedGroups]
+    );
+
+    const handleEject = useCallback(
+        (event: React.MouseEvent) => {
+            dispatch(ejectDisc());
+        },
+        [dispatch]
+    );
+
+    const handleRenameDisc = useCallback(
+        (event: React.MouseEvent) => {
+            dispatch(
+                batchActions([
+                    renameDialogActions.setVisible(true),
+                    renameDialogActions.setCurrentName(disc!.title),
+                    renameDialogActions.setGroupIndex(null),
+                    renameDialogActions.setCurrentFullWidthName(disc!.fullWidthTitle),
+                    renameDialogActions.setIndex(-1),
+                    renameDialogActions.setOfConvert(false),
+                ])
+            );
+        },
+        [dispatch, disc]
     );
 
     const handleTogglePlayPauseTrack = useCallback(
@@ -350,6 +407,7 @@ export const Main = (props: {}) => {
         );
     }, [tracks, selected]);
     const selectedCount = selected.length;
+    const selectedGroupsCount = selectedGroups.length;
 
     const isCapable = (capability: Capability) => deviceCapabilities.includes(capability);
 
@@ -357,6 +415,8 @@ export const Main = (props: {}) => {
         const p = {
             disc,
             deviceName,
+
+            factoryModeRippingInMainUi,
 
             selected,
             setSelected,
@@ -396,7 +456,20 @@ export const Main = (props: {}) => {
                 <Typography component="h1" variant="h4">
                     {deviceName || `Loading...`}
                 </Typography>
-                <TopMenu />
+                <span>
+                    {isCapable(Capability.discEject) ? (
+                        <IconButton
+                            aria-label="actions"
+                            aria-controls="actions-menu"
+                            aria-haspopup="true"
+                            onClick={handleEject}
+                            disabled={!disc}
+                        >
+                            <EjectIcon />
+                        </IconButton>
+                    ) : null}
+                    <TopMenu />
+                </span>
             </Box>
             <Typography component="h2" variant="body2">
                 {disc !== null ? (
@@ -414,39 +487,49 @@ export const Main = (props: {}) => {
                         >
                             <span className={classes.remainingTimeTooltip}>SP Mode</span>
                         </Tooltip>
+                        <div className={classes.spacing} />
+                        <LinearProgress
+                            variant="determinate"
+                            color={((disc.total - disc.left) * 100) / disc.total >= 90 ? 'secondary' : 'primary'}
+                            value={((disc.total - disc.left) * 100) / disc.total}
+                        />
                     </React.Fragment>
                 ) : (
-                    `Loading...`
+                    `No disc loaded`
                 )}
             </Typography>
             <Toolbar
                 className={clsx(classes.toolbar, {
-                    [classes.toolbarHighlight]: selectedCount > 0,
+                    [classes.toolbarHighlight]: selectedCount > 0 || selectedGroupsCount > 0,
                 })}
             >
-                {selectedCount > 0 ? (
+                {selectedCount > 0 || selectedGroupsCount > 0 ? (
                     <Checkbox
                         indeterminate={selectedCount > 0 && selectedCount < tracks.length}
                         checked={selectedCount > 0}
+                        disabled={selectedGroupsCount > 0}
                         onChange={handleSelectAllClick}
                         inputProps={{ 'aria-label': 'select all tracks' }}
                     />
                 ) : null}
-                {selectedCount > 0 ? (
+                {selectedCount > 0 || selectedGroupsCount > 0 ? (
                     <Typography className={classes.toolbarLabel} color="inherit" variant="subtitle1">
-                        {selectedCount} selected
+                        {selectedCount || selectedGroupsCount} selected
                     </Typography>
                 ) : (
-                    <Typography component="h3" variant="h6" className={classes.toolbarLabel}>
+                    <Typography onDoubleClick={handleRenameDisc} component="h3" variant="h6" className={classes.toolbarLabel}>
                         {disc?.fullWidthTitle && `${disc.fullWidthTitle} / `}
-                        {disc?.title || `Untitled Disc`}
+                        {disc ? disc?.title || `Untitled Disc` : ''}
                     </Typography>
                 )}
                 {selectedCount > 0 ? (
                     <React.Fragment>
-                        <Tooltip title={isCapable(Capability.trackDownload) ? 'Download from MD' : 'Record from MD'}>
-                            <Button aria-label={isCapable(Capability.trackDownload) ? 'Download' : 'Record'} onClick={handleShowDumpDialog}>
-                                {isCapable(Capability.trackDownload) ? 'Download' : 'Record'}
+                        <Tooltip title={isCapable(Capability.trackDownload) || factoryModeRippingInMainUi ? 'Download from MD' : 'Record from MD'}>
+                            <Button
+                                aria-label={isCapable(Capability.trackDownload) || factoryModeRippingInMainUi ? 'Download' : 'Record'}
+                                onClick={handleShowDumpDialog}
+                            >
+                                {isCapable(Capability.trackDownload) || factoryModeRippingInMainUi ? 'Download' : 'Record'}
                             </Button>
                         </Tooltip>
                     </React.Fragment>
@@ -462,7 +545,11 @@ export const Main = (props: {}) => {
 
                 {selectedCount > 0 ? (
                     <Tooltip title={canGroup ? 'Group' : ''}>
-                        <IconButton aria-label="group" disabled={!canGroup || !isCapable(Capability.metadataEdit)} onClick={handleGroupTracks}>
+                        <IconButton
+                            aria-label="group"
+                            disabled={!canGroup || !isCapable(Capability.metadataEdit)}
+                            onClick={handleGroupTracks}
+                        >
                             <CreateNewFolderIcon />
                         </IconButton>
                     </Tooltip>
@@ -470,7 +557,35 @@ export const Main = (props: {}) => {
 
                 {selectedCount > 0 ? (
                     <Tooltip title="Rename">
-                        <IconButton aria-label="rename" disabled={selectedCount !== 1 || !isCapable(Capability.metadataEdit)} onClick={handleRenameActionClick}>
+                        <IconButton
+                            aria-label="rename"
+                            disabled={selectedCount !== 1 || !isCapable(Capability.metadataEdit)}
+                            onClick={handleRenameActionClick}
+                        >
+                            <EditIcon />
+                        </IconButton>
+                    </Tooltip>
+                ) : null}
+
+                {selectedGroupsCount > 0 ? (
+                    <Tooltip title="Ungroup">
+                        <IconButton
+                            aria-label="ungroup"
+                            disabled={!isCapable(Capability.metadataEdit)}
+                            onClick={handleDeleteSelectedGroups}
+                        >
+                            <DeleteIcon />
+                        </IconButton>
+                    </Tooltip>
+                ) : null}
+
+                {selectedGroupsCount > 0 ? (
+                    <Tooltip title="Rename Group">
+                        <IconButton
+                            aria-label="rename group"
+                            disabled={!isCapable(Capability.metadataEdit) || selectedGroupsCount !== 1}
+                            onClick={e => handleRenameGroup(e, selectedGroups[0])}
+                        >
                             <EditIcon />
                         </IconButton>
                     </Tooltip>
@@ -506,7 +621,9 @@ export const Main = (props: {}) => {
                                                                     group={group}
                                                                     onRename={handleRenameGroup}
                                                                     onDelete={handleDeleteGroup}
+                                                                    isSelected={selectedGroups.includes(group.index)}
                                                                     isCapable={isCapable}
+                                                                    onSelect={handleSelectGroupClick}
                                                                 />
                                                             )}
                                                             {group.title === null && group.tracks.length === 0 && (
@@ -517,6 +634,7 @@ export const Main = (props: {}) => {
                                                                     draggableId={`${group.index}-${t.index}`}
                                                                     key={`t-${t.index}`}
                                                                     index={tidx}
+                                                                    isDragDisabled={!isCapable(Capability.metadataEdit)}
                                                                 >
                                                                     {(provided: DraggableProvided) => (
                                                                         <TrackRow
@@ -562,7 +680,15 @@ export const Main = (props: {}) => {
             <ErrorDialog />
             <ConvertDialog files={uploadedFiles} />
             <RecordDialog />
-            <DumpDialog trackIndexes={selected} isCapableOfDownload={isCapable(Capability.trackDownload)} />
+            <FactoryModeProgressDialog />
+            <DumpDialog
+                trackIndexes={selected}
+                isCapableOfDownload={isCapable(Capability.trackDownload) || factoryModeRippingInMainUi}
+                isExploitDownload={factoryModeRippingInMainUi}
+            />
+            <SongRecognitionDialog trackIndexes={selected} />
+            <SongRecognitionProgressDialog />
+            <FactoryModeNoticeDialog />
             <AboutDialog />
             <ChangelogDialog />
             <PanicDialog />

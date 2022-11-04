@@ -4,13 +4,13 @@ import { actions as uploadDialogActions } from './upload-dialog-feature';
 import { actions as renameDialogActions } from './rename-dialog-feature';
 import { actions as errorDialogAction } from './error-dialog-feature';
 import { actions as recordDialogAction } from './record-dialog-feature';
-import { actions as factoryActions } from './factory-feature';
 import { actions as appStateActions } from './app-feature';
 import { actions as mainActions } from './main-feature';
 import { actions as convertDialogActions } from './convert-dialog-feature';
-import { actions as factoryProgressDialogActions } from './factory-progress-dialog-feature';
+import { actions as songRecognitionDialogActions } from './song-recognition-dialog-feature';
+import { actions as songRecognitionProgressDialogActions } from './song-recognition-progress-dialog-feature';
 import serviceRegistry from '../services/registry';
-import { Wireformat, getTracks, Disc, DiscFormat, getRemainingCharactersForTitles, Track, Encoding } from 'netmd-js';
+import { Wireformat, getTracks, Disc, DiscFormat, getRemainingCharactersForTitles, EncodingName, Encoding } from 'netmd-js';
 import { AnyAction } from '@reduxjs/toolkit';
 import {
     framesToSec,
@@ -21,16 +21,22 @@ import {
     timeToSeekArgs,
     TitledFile,
     downloadBlob,
+    createDownloadTrackName,
+    secondsToNormal,
+    getPublicPathFor,
 } from '../utils';
 import { UploadFormat } from './convert-dialog-feature';
 import NotificationCompleteIconUrl from '../images/record-complete-notification-icon.png';
-import { assertNumber, concatUint8Arrays, getHalfWidthTitleLength } from 'netmd-js/dist/utils';
-import { NetMDService, NetMDFactoryService, ExploitCapability } from '../services/netmd';
+import { assertNumber, getHalfWidthTitleLength } from 'netmd-js/dist/utils';
+import { Capability, NetMDService } from '../services/netmd';
 import { getSimpleServices, ServiceConstructionInfo } from '../services/service-manager';
-import { parseTOC, getTitleByTrackNumber, reconstructTOC } from 'netmd-tocmanip';
+import { AudioServices } from '../services/audio-export-service-manager';
+import { checkIfAtracDownloadPossible } from './factory/factory-actions';
+import { createWorker } from '@ffmpeg/ffmpeg';
+import { Shazam } from 'shazam-api/dist/api';
 
 export function control(action: 'play' | 'stop' | 'next' | 'prev' | 'goto' | 'pause' | 'seek', params?: unknown) {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
         const state = getState();
         switch (action) {
             case 'play':
@@ -94,14 +100,14 @@ export function control(action: 'play' | 'stop' | 'next' | 'prev' | 'goto' | 'pa
 }
 
 export function renameGroup({ groupIndex, newName, newFullWidthName }: { groupIndex: number; newName: string; newFullWidthName?: string }) {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
         await serviceRegistry!.netmdService?.renameGroup(groupIndex, newName, newFullWidthName);
         listContent()(dispatch);
     };
 }
 
 export function groupTracks(indexes: number[]) {
-    return async function(dispatch: AppDispatch) {
+    return async function (dispatch: AppDispatch) {
         let begin = indexes[0];
         let length = indexes[indexes.length - 1] - begin + 1;
         const { netmdService } = serviceRegistry;
@@ -112,7 +118,7 @@ export function groupTracks(indexes: number[]) {
 }
 
 export function deleteGroups(indexes: number[]) {
-    return async function(dispatch: AppDispatch) {
+    return async function (dispatch: AppDispatch) {
         dispatch(appStateActions.setLoading(true));
         const { netmdService } = serviceRegistry;
         let sorted = [...indexes].sort((a, b) => b - a);
@@ -125,7 +131,7 @@ export function deleteGroups(indexes: number[]) {
 
 export function dragDropTrack(sourceList: number, sourceIndex: number, targetList: number, targetIndex: number) {
     // This code is here, because it would need to be duplicated in both netmd and netmd-mock.
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
         if (sourceList === targetList && sourceIndex === targetIndex) return;
         dispatch(appStateActions.setLoading(true));
         const groupedTracks = getGroupedTracks(await serviceRegistry.netmdService!.listContent());
@@ -220,14 +226,14 @@ export function dragDropTrack(sourceList: number, sourceIndex: number, targetLis
 }
 
 export function addService(info: ServiceConstructionInfo) {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
         const { availableServices } = getState().appState;
         dispatch(appStateActions.setAvailableServices([...availableServices, info]));
     };
 }
 
 export function deleteService(index: number) {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
         if (index < getSimpleServices().length) return;
         let availableServices = [...getState().appState.availableServices];
         availableServices.splice(index, 1);
@@ -237,10 +243,14 @@ export function deleteService(index: number) {
 }
 
 export function pair(serviceInstance: NetMDService) {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
         dispatch(batchActions([appStateActions.setPairingFailed(false), appStateActions.setFactoryModeRippingInMainUi(false)]));
 
         serviceRegistry.mediaSessionService?.init(); // no need to await
+
+        serviceRegistry.audioExportService = new AudioServices[getState().appState.audioExportService].create(
+            getState().appState.audioExportServiceConfig
+        );
         await serviceRegistry.audioExportService!.init();
 
         serviceRegistry.netmdService = serviceInstance;
@@ -260,7 +270,13 @@ export function pair(serviceInstance: NetMDService) {
         try {
             let paired = await serviceRegistry.netmdService!.pair();
             if (paired) {
-                dispatch(appStateActions.setMainView('MAIN'));
+                dispatch(
+                    batchActions([
+                        appStateActions.setMainView('MAIN'),
+                        errorDialogAction.setErrorMessage(''),
+                        errorDialogAction.setVisible(false),
+                    ])
+                );
                 return;
             }
             dispatch(batchActions([appStateActions.setPairingMessage(`Connection Failed`), appStateActions.setPairingFailed(true)]));
@@ -272,8 +288,8 @@ export function pair(serviceInstance: NetMDService) {
     };
 }
 
-export function listContent() {
-    return async function(dispatch: AppDispatch) {
+export function listContent(dropCache: boolean = false) {
+    return async function (dispatch: AppDispatch) {
         // Issue loading
         dispatch(appStateActions.setLoading(true));
         let disc = null;
@@ -288,7 +304,7 @@ export function listContent() {
 
         if (deviceStatus?.discPresent) {
             try {
-                disc = await serviceRegistry.netmdService!.listContent();
+                disc = await serviceRegistry.netmdService!.listContent(dropCache);
             } catch (err) {
                 console.log(err);
                 if (!(err as any).message.startsWith('Rejected')) {
@@ -298,7 +314,7 @@ export function listContent() {
                         )
                     ) {
                         await serviceRegistry.netmdService!.wipeDiscTitleInfo();
-                        disc = await serviceRegistry.netmdService!.listContent();
+                        disc = await serviceRegistry.netmdService!.listContent(true);
                     } else throw err;
                 }
             }
@@ -315,22 +331,30 @@ export function listContent() {
     };
 }
 
-export function renameTrack({ index, newName, newFullWidthName }: { index: number; newName: string; newFullWidthName?: string }) {
-    return async function(dispatch: AppDispatch) {
+export function renameTrack(...entries: { index: number; newName: string; newFullWidthName?: string }[]) {
+    return async function (dispatch: AppDispatch) {
         const { netmdService } = serviceRegistry;
-        dispatch(renameDialogActions.setVisible(false));
+        dispatch(batchActions([renameDialogActions.setVisible(false), appStateActions.setLoading(true)]));
         try {
-            await netmdService!.renameTrack(index, newName, newFullWidthName);
+            for (const { index, newName, newFullWidthName } of entries) {
+                await netmdService!.renameTrack(index, newName, newFullWidthName);
+            }
         } catch (err) {
             console.error(err);
-            dispatch(batchActions([errorDialogAction.setVisible(true), errorDialogAction.setErrorMessage(`Rename failed.`)]));
+            dispatch(
+                batchActions([
+                    errorDialogAction.setVisible(true),
+                    errorDialogAction.setErrorMessage(`Rename failed.`),
+                    appStateActions.setLoading(false),
+                ])
+            );
         }
         listContent()(dispatch);
     };
 }
 
 export function renameDisc({ newName, newFullWidthName }: { newName: string; newFullWidthName?: string }) {
-    return async function(dispatch: AppDispatch) {
+    return async function (dispatch: AppDispatch) {
         const { netmdService } = serviceRegistry;
         await netmdService!.renameDisc(
             newName.replace(/\/\//g, ' /'), // Make sure the title doesn't interfere with the groups
@@ -342,7 +366,7 @@ export function renameDisc({ newName, newFullWidthName }: { newName: string; new
 }
 
 export function deleteTracks(indexes: number[]) {
-    return async function(dispatch: AppDispatch) {
+    return async function (dispatch: AppDispatch) {
         const confirmation = window.confirm(
             `Proceed with Delete Track${indexes.length !== 1 ? 's' : ''}? This operation cannot be undone.`
         );
@@ -357,7 +381,7 @@ export function deleteTracks(indexes: number[]) {
 }
 
 export function wipeDisc() {
-    return async function(dispatch: AppDispatch) {
+    return async function (dispatch: AppDispatch) {
         const confirmation = window.confirm(`Proceed with Wipe Disc? This operation cannot be undone.`);
         if (!confirmation) {
             return;
@@ -370,7 +394,7 @@ export function wipeDisc() {
 }
 
 export function ejectDisc() {
-    return async function(dispatch: AppDispatch) {
+    return async function (dispatch: AppDispatch) {
         const { netmdService } = serviceRegistry;
         netmdService!.ejectDisc();
         dispatch(mainActions.setDisc(null));
@@ -378,31 +402,15 @@ export function ejectDisc() {
 }
 
 export function moveTrack(srcIndex: number, destIndex: number) {
-    return async function(dispatch: AppDispatch) {
+    return async function (dispatch: AppDispatch) {
         const { netmdService } = serviceRegistry;
         await netmdService!.moveTrack(srcIndex, destIndex);
         listContent()(dispatch);
     };
 }
 
-function createDownloadTrackName(track: Track) {
-    let title;
-    if (track.title) {
-        title = `${track.index + 1}. ${track.title}`;
-        if (track.fullWidthTitle) {
-            title += ` (${track.fullWidthTitle})`;
-        }
-    } else if (track.fullWidthTitle) {
-        title = `${track.index + 1}. ${track.fullWidthTitle}`;
-    } else {
-        title = `Track ${track.index + 1}`;
-    }
-    const fileName = title + ([Encoding.lp2, Encoding.lp4].includes(track.encoding) ? '.wav' : '.aea');
-    return fileName;
-}
-
 export function downloadTracks(indexes: number[]) {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
         dispatch(
             batchActions([
                 recordDialogAction.setVisible(true),
@@ -454,7 +462,7 @@ export function downloadTracks(indexes: number[]) {
 }
 
 export function recordTracks(indexes: number[], deviceId: string) {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
         dispatch(
             batchActions([
                 recordDialogAction.setVisible(true),
@@ -484,8 +492,7 @@ export function recordTracks(indexes: number[], deviceId: string) {
             console.log('Waiting for track to be ready to play');
             let position = await netmdService!.getPosition();
             let expected = [track.index, 0, 0, 1];
-            const arrayShallowEquals = <T>(a: T[], b: T[]) => a.length === b.length && a.every((n, i) => b[i] === n);
-            while (position === null || !arrayShallowEquals(expected, position)) {
+            while (position === null || !expected.every((_, i) => expected[i] === position![i])) {
                 await sleep(250);
                 position = await netmdService!.getPosition();
             }
@@ -536,7 +543,7 @@ export function recordTracks(indexes: number[], deviceId: string) {
 }
 
 export function renameInConvertDialog({ index, newName, newFullWidthName }: { index: number; newName: string; newFullWidthName: string }) {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
         let newTitles = [...getState().convertDialog.titles];
         newTitles.splice(index, 1, {
             ...newTitles[index],
@@ -548,7 +555,7 @@ export function renameInConvertDialog({ index, newName, newFullWidthName }: { in
 }
 
 export function selfTest() {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
         if (!window.confirm('Warning - This is a destructive self test. THE DISC WILL BE ERASED! Continue?')) return;
 
         const { netmdService } = serviceRegistry;
@@ -716,7 +723,7 @@ export function selfTest() {
     };
 }
 export function setNotifyWhenFinished(value: boolean) {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
         if (Notification.permission !== 'granted') {
             const confirmation = window.confirm(`Enable Notification on recording completed?`);
             if (!confirmation) {
@@ -733,6 +740,145 @@ export function setNotifyWhenFinished(value: boolean) {
     };
 }
 
+const csvHeader = ['INDEX', 'GROUP RANGE', 'GROUP NAME', 'GROUP FULL WIDTH NAME', 'NAME', 'FULL WIDTH NAME', 'DURATION', 'ENCODING'];
+
+export function exportCSV() {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
+        dispatch(appStateActions.setLoading(true));
+        const disc = await serviceRegistry.netmdService!.listContent();
+        const rows: any[][] = [];
+        rows.push([
+            0, // track index - 0 is disc title
+            '0-0', // No group range
+            '', // No group name
+            '', // No group fw name
+            disc.title ?? '',
+            disc.fullWidthTitle ?? '',
+            Math.round(framesToSec(disc.used)),
+            '',
+        ]);
+        for (const group of disc.groups) {
+            const groupStart = Math.min(...group.tracks.map(e => e.index));
+            const groupEnd = Math.max(...group.tracks.map(e => e.index));
+            const groupRange = group.index === 0 ? '' : `${groupStart}-${groupEnd}`;
+            for (const track of group.tracks) {
+                rows.push([
+                    track.index + 1,
+                    groupRange,
+                    group.title ?? '',
+                    group.fullWidthTitle ?? '',
+                    track.title ?? '',
+                    track.fullWidthTitle ?? '',
+                    Math.round(framesToSec(track.duration)),
+                    EncodingName[track.encoding],
+                ]);
+            }
+        }
+        let csvDocument = [csvHeader, ...rows].map(e => e.map(q => q.toString().replace(/,/g, '\\,')).join(',')).join('\n');
+
+        let title;
+        if (disc.title) {
+            title = disc.title;
+            if (disc.fullWidthTitle) {
+                title += ` (${disc.fullWidthTitle})`;
+            }
+        } else if (disc.fullWidthTitle) {
+            title = disc.fullWidthTitle;
+        } else {
+            title = 'Disc';
+        }
+
+        downloadBlob(new Blob([csvDocument]), title + '.csv');
+        dispatch(appStateActions.setLoading(false));
+    };
+}
+
+export function importCSV(file: File) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
+        const text = new TextDecoder('utf-8').decode(await file.arrayBuffer());
+        const records = text
+            .split('\n')
+            .map(e => e.trim())
+            .filter(e => e.length !== 0)
+            .map(e => e.split(/(?<!\\),/g));
+
+        if (records.length === 0 || records[0].some((e, i) => e !== csvHeader[i])) {
+            alert('Malformed CSV file');
+            return;
+        }
+
+        let addedGroupRanges = new Set<string>();
+
+        const isTimeDifferenceAcceptable = (a: number, b: number) => Math.abs(a - b) < 2;
+
+        // Make sure the CSV matches the disc
+        dispatch(appStateActions.setLoading(true));
+        const disc = await serviceRegistry.netmdService!.listContent();
+        const ungroupedTracks = getTracks(disc).sort((a, b) => a.index - b.index);
+        if (disc.trackCount !== records.length - 2) {
+            // - 2 - one for the header, second for the disc title / info
+            if (
+                !window.confirm(
+                    `The CSV file describes a disc with ${records.length - 2} tracks.\nThe disc inserted has ${disc.trackCount
+                    } tracks.\nContinue importing?`
+                )
+            ) {
+                dispatch(appStateActions.setLoading(false));
+                return;
+            }
+        }
+
+        await serviceRegistry.netmdService!.wipeDiscTitleInfo();
+
+        for (let [sIndex, gRange, groupName, groupFullWidthName, name, fwName, sDuration, encoding] of records.slice(1)) {
+            let index = parseInt(sIndex),
+                duration = parseInt(sDuration);
+            gRange = gRange.replace(/ /g, '');
+            if (index === 0) {
+                // Disc title info
+                await serviceRegistry.netmdService!.renameDisc(name, fwName);
+                continue;
+            }
+
+            let currentTrackEncoding = EncodingName[ungroupedTracks[index - 1].encoding];
+            if (
+                !isTimeDifferenceAcceptable(framesToSec(ungroupedTracks[index - 1].duration), duration) ||
+                currentTrackEncoding !== encoding
+            ) {
+                if (
+                    !window.confirm(
+                        `
+                    The CSV file describes track ${index} as a ${secondsToNormal(duration)} ${encoding} track.
+                    The actual track${index} is a ${secondsToNormal(
+                            framesToSec(ungroupedTracks[index - 1].duration)
+                        )} ${currentTrackEncoding} track.
+                    Label it according to the file?
+                `.trim()
+                    )
+                ) {
+                    continue;
+                }
+            }
+
+            if (gRange !== '') {
+                // Is part of group
+                if (!addedGroupRanges.has(gRange)) {
+                    addedGroupRanges.add(gRange);
+                    const [startS, endS] = gRange.split('-');
+                    let start = parseInt(startS),
+                        end = parseInt(endS),
+                        length = end - start + 1;
+                    await serviceRegistry.netmdService!.addGroup(start, length, groupName, groupFullWidthName);
+                }
+            }
+
+            await serviceRegistry.netmdService!.renameTrack(index - 1, name, fwName);
+        }
+
+        listContent()(dispatch);
+    };
+}
+
 export const WireformatDict: { [k: string]: Wireformat } = {
     SP: Wireformat.pcm,
     LP2: Wireformat.lp2,
@@ -740,8 +886,215 @@ export const WireformatDict: { [k: string]: Wireformat } = {
     LP4: Wireformat.lp4,
 };
 
-export function convertAndUpload(files: TitledFile[], format: UploadFormat) {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
+export function openRecognizeTrackDialog() {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
+        const { deviceCapabilities } = getState().main;
+        if (deviceCapabilities.length > 0 && !deviceCapabilities.includes(Capability.factoryMode)) {
+            dispatch(songRecognitionDialogActions.setImportMethod('line-in'));
+        }
+
+        dispatch(
+            batchActions([
+                songRecognitionDialogActions.setTitles(
+                    getTracks(getState().main.disc!)
+                        .sort((a, b) => a.index - b.index)
+                        .map(track => ({
+                            originalTitle: track.title ?? '',
+                            originalFullWidthTitle: track.fullWidthTitle ?? '',
+                            index: track.index,
+
+                            newTitle: '',
+                            newFullWidthTitle: '',
+
+                            songAlbum: '',
+                            songArtist: '',
+                            songTitle: '',
+
+                            alreadyRecognized: false,
+                            recognizeFail: false,
+                        }))
+                ),
+                songRecognitionDialogActions.setVisible(true),
+            ])
+        );
+    };
+}
+
+export function recognizeTracks(indices: number[], mode: 'exploits' | 'line-in', inputModeConfiguration?: { deviceId?: string }) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
+        const shazam = new Shazam();
+
+        // Bypass CORS
+        shazam.endpoint.sendRecognizeRequest = async (url: string, body: string) => {
+            return await window.native!.unrestrictedFetchJSON(url, {
+                method: 'POST',
+                body,
+                headers: shazam.endpoint.headers(),
+            });
+        };
+
+        const tracks = [...getState().songRecognitionDialog.titles];
+
+        dispatch(
+            batchActions([
+                songRecognitionProgressDialogActions.setCancelled(false),
+                songRecognitionProgressDialogActions.setVisible(true),
+                songRecognitionProgressDialogActions.setCurrentTrack(0),
+                songRecognitionProgressDialogActions.setTotalTracks(indices.length),
+            ])
+        );
+
+        let i = 0;
+        for (let index of indices) {
+            dispatch(songRecognitionProgressDialogActions.setCurrentTrack(i++));
+
+            // 6 tries to get the song right:
+            const track = getTracks(getState().main.disc!).find(e => e.index === index)!;
+
+            const transcodeAnyToValid = async (data: Uint8Array, extension: string) => {
+                let ffmpegProcess = createWorker({
+                    logger: (payload: any) => {
+                        console.log(payload.action, payload.message);
+                    },
+                    corePath: getPublicPathFor('ffmpeg-core.js'),
+                    workerPath: getPublicPathFor('worker.min.js'),
+                });
+                await ffmpegProcess.load();
+
+                await ffmpegProcess.write(`audio.${extension}`, data);
+                try {
+                    await ffmpegProcess.transcode(`audio.${extension}`, `raw`, '-ar 16000 -ac 1 -f s16le');
+                } catch (er) {
+                    console.log(er);
+                }
+                const rawSamples = (await ffmpegProcess.read(`raw`)).data;
+                await ffmpegProcess.worker.terminate();
+                return rawSamples;
+            };
+
+            for (let offset = 0; offset < 48; offset += 8) {
+                let rawSamples: Uint8Array;
+                dispatch(
+                    batchActions([
+                        songRecognitionProgressDialogActions.setCurrentStep(0),
+                        songRecognitionProgressDialogActions.setCurrentStepProgress(0),
+                        songRecognitionProgressDialogActions.setCurrentStepTotal(1),
+                    ])
+                );
+
+                const optimalStartSeconds = Math.floor(framesToSec(track.duration) / 2) + offset;
+
+                if (mode === 'exploits') {
+                    if (!(await checkIfAtracDownloadPossible())) {
+                        window.alert(
+                            'Cannot enable homebrew mode ripping in main UI.\nThis device is not supported yet.\nStay tuned for future updates.'
+                        );
+                        dispatch(songRecognitionProgressDialogActions.setVisible(false));
+                        return;
+                    }
+                    // Download the track
+
+                    let atracData = await serviceRegistry.netmdFactoryService!.exploitDownloadTrack(
+                        index,
+                        e =>
+                            dispatch(
+                                batchActions([
+                                    songRecognitionProgressDialogActions.setCurrentStepProgress(e.read),
+                                    songRecognitionProgressDialogActions.setCurrentStepTotal(e.total),
+                                ])
+                            ),
+                        {
+                            secondsToRead: 16,
+                            startSeconds: optimalStartSeconds,
+                            writeHeader: true,
+                        }
+                    );
+
+                    dispatch(
+                        batchActions([
+                            songRecognitionProgressDialogActions.setCurrentStepProgress(-1),
+                            songRecognitionProgressDialogActions.setCurrentStepTotal(0),
+                            songRecognitionProgressDialogActions.setCurrentStep(1),
+                        ])
+                    );
+
+                    let extension = [Encoding.lp2, Encoding.lp4].includes(track.encoding) ? 'wav' : 'aea';
+                    rawSamples = await transcodeAnyToValid(atracData, extension);
+                } else {
+                    const deviceId = inputModeConfiguration!.deviceId!;
+                    dispatch(songRecognitionProgressDialogActions.setCurrentStepTotal(100));
+
+                    const { mediaRecorderService, netmdService } = serviceRegistry;
+                    await netmdService?.stop();
+                    await netmdService?.gotoTrack(track.index);
+                    await netmdService?.gotoTime(
+                        track.index,
+                        Math.floor(optimalStartSeconds / 3600),
+                        Math.floor((optimalStartSeconds % 3600) / 60),
+                        optimalStartSeconds % 60,
+                        0
+                    );
+                    await netmdService?.play();
+                    await mediaRecorderService?.initStream(deviceId);
+                    await mediaRecorderService?.startRecording();
+                    await sleepWithProgressCallback(16 * 1000, (perc: number) => {
+                        dispatch(songRecognitionProgressDialogActions.setCurrentStepProgress(perc));
+                    });
+                    await mediaRecorderService?.stopRecording();
+                    await netmdService?.stop();
+                    dispatch(
+                        batchActions([
+                            songRecognitionProgressDialogActions.setCurrentStepProgress(-1),
+                            songRecognitionProgressDialogActions.setCurrentStepTotal(0),
+                            songRecognitionProgressDialogActions.setCurrentStep(1),
+                        ])
+                    );
+                    const rawWav = await new Promise<Uint8Array>(res =>
+                        mediaRecorderService!.recorder.exportWAV(async (blob: Blob) => res(new Uint8Array(await blob.arrayBuffer())))
+                    );
+                    rawSamples = await transcodeAnyToValid(rawWav, 'wav');
+                    await mediaRecorderService?.closeStream();
+                }
+                dispatch(batchActions([songRecognitionProgressDialogActions.setCurrentStepProgress(-1)]));
+
+                const samplesArray = [];
+                for (let i = 0; i < rawSamples.length / 2; i++) {
+                    samplesArray.push(rawSamples[2 * i] | (rawSamples[2 * i + 1] << 8));
+                }
+                const songData = await shazam.recognizeSong(samplesArray, state =>
+                    dispatch(songRecognitionProgressDialogActions.setCurrentStep(state === 'generating' ? 1 : 2))
+                );
+                if (songData !== null) {
+                    tracks[index] = {
+                        ...tracks[index],
+                        alreadyRecognized: true,
+                        recognizeFail: false,
+
+                        songTitle: songData.title,
+                        songArtist: songData.artist,
+                        songAlbum: songData.album ?? 'Unknown',
+                    };
+                    break;
+                } else {
+                    tracks[index] = {
+                        ...tracks[index],
+                        recognizeFail: true,
+                    };
+                }
+                if (getState().songRecognitionProgressDialog.cancelled) break;
+            }
+        }
+
+        dispatch(batchActions([songRecognitionDialogActions.setTitles(tracks), songRecognitionProgressDialogActions.setVisible(false)]));
+    };
+}
+
+export function convertAndUpload(
+    files: TitledFile[],
+    format: UploadFormat,
+    additionalParameters?: { loudnessTarget?: number; enableReplayGain: boolean }
+) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
         const { audioExportService, netmdService } = serviceRegistry;
         const wireformat = WireformatDict[format];
 
@@ -757,8 +1110,13 @@ export function convertAndUpload(files: TitledFile[], format: UploadFormat) {
         await netmdService?.stop();
         dispatch(batchActions([uploadDialogActions.setVisible(true), uploadDialogActions.setCancelUpload(false)]));
 
+        let lastProgress = new Date().getTime();
         const updateProgressCallback = ({ written, encrypted, total }: { written: number; encrypted: number; total: number }) => {
-            dispatch(uploadDialogActions.setWriteProgress({ written, encrypted, total }));
+            let now = new Date().getTime();
+            if (now - lastProgress > 200) {
+                queueMicrotask(() => dispatch(uploadDialogActions.setWriteProgress({ written, encrypted, total })));
+                lastProgress = now;
+            }
         };
 
         const hasUploadBeenCancelled = () => {
@@ -779,7 +1137,7 @@ export function convertAndUpload(files: TitledFile[], format: UploadFormat) {
             const notification = new Notification('MiniDisc recording completed', {
                 icon: NotificationCompleteIconUrl,
             });
-            notification.onclick = function() {
+            notification.onclick = function () {
                 window.focus();
                 this.close();
             };
@@ -802,7 +1160,7 @@ export function convertAndUpload(files: TitledFile[], format: UploadFormat) {
             dispatch(uploadDialogActions.setTrackProgress(trackUpdate));
         };
 
-        let conversionIterator = async function*(files: TitledFile[]) {
+        let conversionIterator = async function* (files: TitledFile[]) {
             let converted: Promise<{ file: TitledFile; data: ArrayBuffer }>[] = [];
 
             let i = 0;
@@ -827,7 +1185,11 @@ export function convertAndUpload(files: TitledFile[], format: UploadFormat) {
                             let data: ArrayBuffer;
                             try {
                                 await audioExportService!.prepare(f.file);
-                                data = await audioExportService!.export({ format });
+                                data = await audioExportService!.export({
+                                    format,
+                                    loudnessTarget: additionalParameters?.loudnessTarget,
+                                    enableReplayGain: additionalParameters?.enableReplayGain,
+                                });
                                 convertNext();
                                 resolve({ file: f, data: data });
                             } catch (err) {
@@ -839,7 +1201,6 @@ export function convertAndUpload(files: TitledFile[], format: UploadFormat) {
                     );
                 } else {
                     // This is already an ATRAC file - don't reencode.
-                    debugger;
                     converted.push(
                         new Promise(async resolve => {
                             // Remove the WAV header.
@@ -918,256 +1279,5 @@ export function convertAndUpload(files: TitledFile[], format: UploadFormat) {
         showFinishedNotificationIfNeeded();
         releaseScreenLockIfPresent();
         listContent()(dispatch);
-    };
-}
-
-async function loadFactoryMode() {
-    if (serviceRegistry.netmdFactoryService === undefined) {
-        serviceRegistry.netmdFactoryService = (await serviceRegistry.netmdService!.factory()) as NetMDFactoryService;
-    }
-}
-
-export function readToc() {
-    return async function(dispatch: AppDispatch) {
-        await loadFactoryMode();
-        dispatch(appStateActions.setLoading(true));
-        let newToc = parseTOC(
-            await serviceRegistry.netmdFactoryService!.readUTOCSector(0),
-            await serviceRegistry.netmdFactoryService!.readUTOCSector(1),
-            await serviceRegistry.netmdFactoryService!.readUTOCSector(2)
-        );
-        const firmwareVersion = await serviceRegistry.netmdFactoryService!.getDeviceFirmware();
-        const capabilities = await serviceRegistry.netmdFactoryService!.getExploitCapabilities();
-        dispatch(
-            batchActions([
-                factoryActions.setToc(newToc),
-                factoryActions.setExploitCapabilities(capabilities),
-                factoryActions.setFirmwareVersion(firmwareVersion),
-                factoryActions.setModified(false),
-                appStateActions.setLoading(false),
-            ])
-        );
-    };
-}
-
-export function editFragmentMode(index: number, mode: number) {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
-        const toc = JSON.parse(JSON.stringify(getState().factory.toc));
-        if (toc.trackFragmentList[index].mode !== mode) {
-            dispatch(factoryActions.setModified(true));
-        }
-        toc.trackFragmentList[index].mode = mode;
-        dispatch(factoryActions.setToc(toc));
-    };
-}
-
-export function writeModifiedTOC() {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
-        dispatch(appStateActions.setLoading(true));
-        const toc = getState().factory.toc!;
-        const sectors = reconstructTOC(toc);
-        for (let i = 0; i < 3; i++) {
-            await serviceRegistry.netmdFactoryService!.writeUTOCSector(i, sectors[i]!);
-        }
-        await serviceRegistry.netmdFactoryService!.flushUTOCCacheToDisc();
-        dispatch(batchActions([appStateActions.setLoading(false), factoryActions.setModified(false)]));
-    };
-}
-
-export function runTetris() {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
-        await serviceRegistry.netmdFactoryService!.runTetris();
-    };
-}
-
-export function downloadRam() {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
-        const firmwareVersion = getState().factory.firmwareVersion;
-        dispatch(
-            batchActions([
-                factoryProgressDialogActions.setDetails({
-                    name: 'Transferring RAM',
-                    units: 'bytes',
-                }),
-                factoryProgressDialogActions.setProgress({
-                    current: 0,
-                    total: 0,
-                    additionalInfo: '',
-                }),
-                factoryProgressDialogActions.setVisible(true),
-            ])
-        );
-        const ramData = await serviceRegistry.netmdFactoryService!.readRAM(
-            ({ readBytes, totalBytes }: { readBytes: number; totalBytes: number }) => {
-                dispatch(
-                    factoryProgressDialogActions.setProgress({
-                        current: readBytes,
-                        total: totalBytes,
-                    })
-                );
-            }
-        );
-
-        const fileName = `ram_${getState().main.deviceName}_${firmwareVersion}.bin`;
-        downloadBlob(new Blob([ramData]), fileName);
-        dispatch(factoryProgressDialogActions.setVisible(false));
-    };
-}
-
-export function downloadRom() {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
-        dispatch(
-            batchActions([
-                factoryProgressDialogActions.setDetails({
-                    name: 'Transferring Firmware',
-                    units: 'bytes',
-                }),
-                factoryProgressDialogActions.setVisible(true),
-            ])
-        );
-        const firmwareData = await serviceRegistry.netmdFactoryService!.readFirmware(
-            ({ type, readBytes, totalBytes }: { type: 'RAM' | 'ROM'; readBytes: number; totalBytes: number }) => {
-                if (readBytes % 0x200 === 0)
-                    dispatch(
-                        factoryProgressDialogActions.setProgress({
-                            current: readBytes,
-                            total: totalBytes,
-                            additionalInfo: type,
-                        })
-                    );
-            }
-        );
-        const firmwareVersion = getState().factory.firmwareVersion;
-        const fileName = `firmware_${getState().main.deviceName}_${firmwareVersion}.bin`;
-        downloadBlob(new Blob([firmwareData]), fileName);
-        dispatch(factoryProgressDialogActions.setVisible(false));
-    };
-}
-
-export function downloadToc() {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
-        dispatch(
-            batchActions([
-                factoryProgressDialogActions.setDetails({
-                    name: 'Transferring TOC',
-                    units: 'sectors',
-                }),
-                factoryProgressDialogActions.setProgress({
-                    total: 6,
-                    current: 0,
-                }),
-                factoryProgressDialogActions.setVisible(true),
-            ])
-        );
-        let readSlices: Uint8Array[] = [];
-        for (let i = 0; i < 6; i += 1) {
-            dispatch(factoryProgressDialogActions.setProgress({ current: i + 1, total: 6 }));
-            readSlices.push(await serviceRegistry.netmdFactoryService!.readUTOCSector(i));
-        }
-        const fileName = `toc_${getTitleByTrackNumber(getState().factory.toc!, 0 /* Disc */)}.bin`;
-        downloadBlob(new Blob([concatUint8Arrays(...readSlices)]), fileName);
-        dispatch(factoryProgressDialogActions.setVisible(false));
-    };
-}
-
-export function uploadToc(file: File) {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
-        if (file.size !== 2352 * 6) {
-            window.alert('Not a valid TOC file');
-            return;
-        }
-        dispatch(appStateActions.setLoading(true));
-
-        const data = new Uint8Array(await file.arrayBuffer());
-
-        for (let i = 0; i < 6; i++) {
-            let sectorStart = i * 2352;
-            await serviceRegistry.netmdFactoryService!.writeUTOCSector(i, data.slice(sectorStart, sectorStart + 2352));
-        }
-        await serviceRegistry.netmdFactoryService!.flushUTOCCacheToDisc();
-        readToc()(dispatch);
-    };
-}
-
-export function exploitDownloadTracks(trackIndexes: number[]) {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
-        // Verify if there even exists a track of that number
-        const disc = getState().main.disc!;
-        const tracks = getTracks(disc);
-        try {
-            await serviceRegistry.netmdService!.stop();
-        } catch (ex) {
-            /* Ignore */
-        }
-
-        dispatch(factoryProgressDialogActions.setVisible(true));
-        for (let trackIndex of trackIndexes) {
-            if (trackIndex >= disc.trackCount) {
-                window.alert("This track does not exist. Make sure you've read the instructions on how to use the factory mode.");
-                return;
-            }
-            const track = tracks.find(n => n.index === trackIndex)!;
-            dispatch(
-                batchActions([
-                    factoryProgressDialogActions.setDetails({
-                        name: `Transferring track ${trackIndex + 1}`,
-                        units: 'sectors',
-                    }),
-                    factoryProgressDialogActions.setProgress({
-                        current: -1,
-                        total: 0,
-                        additionalInfo: 'Rewriting firmware...',
-                    }),
-                ])
-            );
-
-            const trackData = await serviceRegistry.netmdFactoryService!.exploitDownloadTrack(
-                trackIndex,
-                ({
-                    totalSectors,
-                    sectorsRead,
-                    action,
-                    sector,
-                }: {
-                    sectorsRead: number;
-                    totalSectors: number;
-                    action: 'READ' | 'SEEK';
-                    sector?: string;
-                }) => {
-                    dispatch(
-                        factoryProgressDialogActions.setProgress({
-                            current: action === 'SEEK' ? -1 : sectorsRead,
-                            total: totalSectors,
-                            additionalInfo: action === 'SEEK' ? 'Seeking...' : `Reading sector ${sector!}...`,
-                        })
-                    );
-                }
-            );
-            const filename = createDownloadTrackName(track);
-            downloadBlob(new Blob([trackData]), filename);
-        }
-        dispatch(factoryProgressDialogActions.setVisible(false));
-    };
-}
-
-export function enableFactoryRippingModeInMainUi() {
-    return async function(dispatch: AppDispatch, getState: () => RootState) {
-        dispatch(appStateActions.setLoading(true));
-        await serviceRegistry.netmdService!.stop();
-        await loadFactoryMode();
-
-        const capabilities = await serviceRegistry.netmdFactoryService!.getExploitCapabilities();
-        if (!capabilities.includes(ExploitCapability.downloadAtrac)) {
-            dispatch(appStateActions.setLoading(false));
-            window.alert(
-                'Cannot enable factory mode ripping in main UI.\nThis device is not supported yet.\nStay tuned for future updates.'
-            );
-            return;
-        }
-
-        // At this point we're in the factory mode, and CSAR is allowed.
-        // It's safe to enable this functionality.
-
-        dispatch(batchActions([appStateActions.setFactoryModeRippingInMainUi(true), appStateActions.setLoading(false)]));
     };
 }

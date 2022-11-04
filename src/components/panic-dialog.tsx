@@ -10,7 +10,7 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import Slide from '@material-ui/core/Slide';
 import Button from '@material-ui/core/Button';
 import { TransitionProps } from '@material-ui/core/transitions';
-import { Typography } from '@material-ui/core';
+import { makeStyles, Typography } from '@material-ui/core';
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement<any, any> },
@@ -19,10 +19,24 @@ const Transition = React.forwardRef(function Transition(
     return <Slide direction="up" ref={ref} {...props} />;
 });
 
+const useStyles = makeStyles(theme => ({
+    codeBlock: {
+        marginTop: theme.spacing(3),
+        fontFamily: 'monospace',
+        color: 'white',
+        backgroundColor: '#EF5350',
+        whiteSpace: 'pre-wrap',
+        padding: theme.spacing(2),
+        borderRadius: theme.spacing(1),
+        fontSize: 10,
+    },
+}));
+
 export const PanicDialog = (props: {}) => {
     const dispatch = useDispatch();
+    const classes = useStyles();
 
-    let { visible, dismissed } = useShallowEqualSelector(state => state.panicDialog);
+    let { visible, dismissed, errorProvided } = useShallowEqualSelector(state => state.panicDialog);
 
     const handleReloadApp = useCallback(() => {
         window.location.reload();
@@ -42,7 +56,7 @@ export const PanicDialog = (props: {}) => {
             aria-labelledby="error-dialog-slide-title"
             aria-describedby="error-dialog-slide-description"
         >
-            <DialogTitle id="alert-dialog-slide-title">Oops… something unexpected happened.</DialogTitle>
+            <DialogTitle id="alert-dialog-slide-title">Oops… Something unexpected happened.</DialogTitle>
             <DialogContent>
                 <Typography color="textSecondary" variant="body1" component="div">
                     Try to restart the app. If the error persists, try the followings:
@@ -51,8 +65,10 @@ export const PanicDialog = (props: {}) => {
                         <li>Use a blank MiniDisc.</li>
                         <li>Try to use Web MiniDisc Pro on another computer.</li>
                     </ol>
-                    If this does not solve the error, your unit might not be supported yet or you have encountered a bug. The full error is
-                    reported in the JS console.
+                    If this does not solve the error, your unit might not be supported yet or you have encountered a bug.
+                </Typography>
+                <Typography variant="body1" component="div" className={classes.codeBlock}>
+                    {errorProvided}
                 </Typography>
             </DialogContent>
             <DialogActions>

@@ -3,6 +3,7 @@ import { enableBatching } from 'redux-batched-actions';
 
 export const initialState = {
     visible: false,
+    errorProvided: '',
     dismissed: false, // This will prevent showing the dialog during the same session
 };
 
@@ -12,6 +13,9 @@ const slice = createSlice({
     reducers: {
         setVisible: (state, action: PayloadAction<boolean>) => {
             state.visible = action.payload;
+        },
+        setErrorProvided: (state, action: PayloadAction<string>) => {
+            state.errorProvided = action.payload;
         },
         dismiss: (state, action: PayloadAction<void>) => {
             state.visible = false;

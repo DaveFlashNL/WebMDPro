@@ -1,36 +1,27 @@
 import React, { ReactHTMLElement } from 'react';
+import { CustomParameterInfo, CustomParameters } from '../custom-parameters';
 import { NetMDService, NetMDUSBService } from './netmd';
 // import { NetMDMockService } from './netmd-mock';
 import { NetMDRemoteService } from './remote-netmd';
 
-export type CustomParameters = { [key: string]: string | number | boolean };
-export type CustomParameterType = 'string' | 'number' | 'boolean';
-export type CustomParameterInfo = {
-    userFriendlyName: string;
-    varName: string;
-    type: CustomParameterType;
-    defaultValue?: string;
-    validator?: (content: string) => boolean;
-};
-
-type ServicePrototype = {
+interface ServicePrototype {
     create: (parameters?: CustomParameters) => NetMDService;
     getConnectName: (parameters?: CustomParameters) => string;
     name: string;
     customParameters?: CustomParameterInfo[];
     description?: ReactHTMLElement<any>;
-};
+}
 
-export type ServiceConstructionInfo = {
+export interface ServiceConstructionInfo {
     name: string;
     parameters?: CustomParameters;
-};
+}
 
 export const Services: ServicePrototype[] = [
     {
         name: 'USB NetMD',
         getConnectName: () => 'Connect',
-        create: () => (window as any).native?.interface ?? new NetMDUSBService({ debug: true }),
+        create: () => window.native?.interface ?? new NetMDUSBService({ debug: true }),
     },
     {
         name: 'Remote NetMD',
@@ -91,60 +82,47 @@ export const Services: ServicePrototype[] = [
                 userFriendlyName: 'capabilityContentList',
                 type: 'boolean',
                 varName: 'capabilityContentList',
+                defaultValue: true,
             },
             {
                 userFriendlyName: 'capabilityPlaybackControl',
                 type: 'boolean',
                 varName: 'capabilityPlaybackControl',
+                defaultValue: true,
             },
             {
                 userFriendlyName: 'capabilityMetadataEdit',
                 type: 'boolean',
                 varName: 'capabilityMetadataEdit',
+                defaultValue: true,
             },
             {
                 userFriendlyName: 'capabilityTrackUpload',
                 type: 'boolean',
                 varName: 'capabilityTrackUpload',
+                defaultValue: true,
             },
             {
                 userFriendlyName: 'capabilityTrackDownload',
                 type: 'boolean',
                 varName: 'capabilityTrackDownload',
+                defaultValue: true,
             },
             {
                 userFriendlyName: 'capabilityDiscEject',
                 type: 'boolean',
                 varName: 'capabilityDiscEject',
+                defaultValue: true,
             },
             {
                 userFriendlyName: 'capabilityFactoryMode',
                 type: 'boolean',
                 varName: 'capabilityFactoryMode',
+                defaultValue: true,
             }
         ]
     },*/
 ];
-
-function getDefaultForType(type: CustomParameterType) {
-    switch (type) {
-        case 'boolean':
-            return false;
-        case 'string':
-            return '';
-        case 'number':
-            return 0;
-    }
-}
-
-export function initializeParameters(service: ServicePrototype) {
-    let emptyParameters: CustomParameters = {};
-    let parametersDefinition = service.customParameters!;
-    for (let param of parametersDefinition) {
-        emptyParameters[param.varName] = param.defaultValue || getDefaultForType(param.type);
-    }
-    return emptyParameters;
-}
 
 export function getSimpleServices() {
     return Services.filter(n => !n.customParameters).map(n => ({

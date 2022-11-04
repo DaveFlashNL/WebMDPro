@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { enableBatching } from 'redux-batched-actions';
+import { CustomParameters } from '../custom-parameters';
 import { filterOutCorrupted, getSimpleServices, ServiceConstructionInfo } from '../services/service-manager';
 import { savePreference, loadPreference } from '../utils';
 
@@ -21,6 +22,8 @@ export interface AppState {
     availableServices: ServiceConstructionInfo[];
     lastSelectedService: number;
     factoryModeRippingInMainUi: boolean;
+    audioExportService: number;
+    audioExportServiceConfig: CustomParameters;
 }
 
 export const buildInitialState = (): AppState => {
@@ -41,6 +44,8 @@ export const buildInitialState = (): AppState => {
         lastSelectedService: loadPreference('lastSelectedService', 0),
         factoryModeRippingInMainUi: false, // As this value is heavily device-dependent and not really that stable yet
         // it should not be stored in the preferences, and should default to false.
+        audioExportService: loadPreference('audioExportService', 0),
+        audioExportServiceConfig: loadPreference('audioExportServiceConfig', {}),
     };
 };
 
@@ -105,6 +110,14 @@ export const slice = createSlice({
         },
         setFactoryModeRippingInMainUi: (state, action: PayloadAction<boolean>) => {
             state.factoryModeRippingInMainUi = action.payload;
+        },
+        setAudioExportService: (state, action: PayloadAction<number>) => {
+            state.audioExportService = action.payload;
+            savePreference('audioExportService', state.audioExportService);
+        },
+        setAudioExportServiceConfig: (state, action: PayloadAction<CustomParameters>) => {
+            state.audioExportServiceConfig = action.payload;
+            savePreference('audioExportServiceConfig', state.audioExportServiceConfig);
         },
     },
 });

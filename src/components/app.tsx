@@ -1,4 +1,7 @@
 import React from 'react';
+/*import { AppearanceProvider } from 'react-native-appearance';
+import { Appearance, useColorScheme } from 'react-native-appearance';*/
+
 import { belowDesktop, forAnyDesktop, forWideDesktop, useShallowEqualSelector } from '../utils';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
@@ -15,6 +18,8 @@ import Link from '@material-ui/core/Link';
 import Box from '@material-ui/core/Box';
 import { W95App } from './win95/app';
 import { Capability } from '../services/netmd';
+import Toc from './factory/factory';
+import { GIT_HASH } from '../version-info';
 
 const useStyles = (props: { showsList: boolean }) =>
     makeStyles(theme => ({
@@ -105,8 +110,18 @@ const lightTheme = createTheme({
     },
 });
 
+function returnintialTheme() {
+    //const colorScheme = useColorScheme();
+    const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    if (colorScheme.matches) {
+        return darkTheme;
+    } else {
+        return lightTheme;
+    }
+}
+
 const App = () => {
-    const { mainView, loading, darkMode, vintageMode } = useShallowEqualSelector(state => state.appState);
+    const { mainView, loading, vintageMode } = useShallowEqualSelector(state => state.appState);
     const { deviceCapabilities } = useShallowEqualSelector(state => state.main);
     const classes = useStyles({ showsList: mainView === 'WELCOME' || deviceCapabilities.includes(Capability.contentList) })();
 
@@ -116,13 +131,14 @@ const App = () => {
 
     return (
         <React.Fragment>
-            <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
+            <ThemeProvider theme={returnintialTheme()}>
                 <CssBaseline />
 
                 <main className={classes.layout}>
                     <Paper className={classes.paper}>
                         {mainView === 'WELCOME' ? <Welcome /> : null}
                         {mainView === 'MAIN' ? <Main /> : null}
+                        {mainView === 'FACTORY' ? <Toc /> : null}
 
                         <Box className={classes.controlsContainer}>{mainView === 'MAIN' ? <Controls /> : null}</Box>
                     </Paper>
@@ -145,7 +161,7 @@ const App = () => {
                         </Link>{' '}
                         {new Date().getFullYear()}
                         {'.'}<br /><br />
-                        {'(v1.1.1c ~ a6fb8ca0)'}<br />
+                        {'(v1.3.3 ~ '}{GIT_HASH}{')'}<br />
                         <sub>{'*Disclaimers moved to about box'}</sub>
                     </Typography>
                 </main>

@@ -113,6 +113,7 @@ export const Controls = () => {
     const deviceStatus = useShallowEqualSelector(state => state.main.deviceStatus);
     const disc = useShallowEqualSelector(state => state.main.disc);
     const deviceCapabilities = useShallowEqualSelector(state => state.main.deviceCapabilities);
+    const loading = useShallowEqualSelector(state => state.appState.loading);
 
     const isCapable = (capability: Capability) => deviceCapabilities.includes(capability);
 
@@ -213,6 +214,7 @@ export const Controls = () => {
             handleNext,
 
             message,
+            loading,
             discPresent,
             lcdScroll,
             lcdRef,
@@ -228,19 +230,19 @@ export const Controls = () => {
         <Box className={classes.container}>
             {isCapable(Capability.playbackControl) ? (
                 <React.Fragment>
-                    <IconButton aria-label="prev" onClick={handlePrev} className={classes.button}>
+                    <IconButton disabled={!disc} aria-label="prev" onClick={handlePrev} className={classes.button}>
                         <SkipPreviousIcon />
                     </IconButton>
-                    <IconButton aria-label="play" onClick={handlePlay} className={classes.button}>
+                    <IconButton disabled={!disc} aria-label="play" onClick={handlePlay} className={classes.button}>
                         <PlayArrowIcon />
                     </IconButton>
-                    <IconButton aria-label="pause" onClick={handlePause} className={classes.button}>
+                    <IconButton disabled={!disc} aria-label="pause" onClick={handlePause} className={classes.button}>
                         <PauseIcon />
                     </IconButton>
-                    <IconButton aria-label="stop" onClick={handleStop} className={classes.button}>
+                    <IconButton disabled={!disc} aria-label="stop" onClick={handleStop} className={classes.button}>
                         <StopIcon />
                     </IconButton>
-                    <IconButton aria-label="next" onClick={handleNext} className={classes.button}>
+                    <IconButton disabled={!disc} aria-label="next" onClick={handleNext} className={classes.button}>
                         <SkipNextIcon />
                     </IconButton>
                 </React.Fragment>
@@ -248,7 +250,9 @@ export const Controls = () => {
             <div className={classes.lcd}>
                 <div className={classes.lcdText}>
                     <span
-                        className={lcdScroll ? classes.scrollingStatusMessage : classes.statusMessage}
+                        className={clsx(lcdScroll ? classes.scrollingStatusMessage : classes.statusMessage, {
+                            [classes.lcdBlink]: disc === null,
+                        })}
                         ref={lcdRef}
                         style={
                             message && lcdScroll > 0
@@ -256,7 +260,7 @@ export const Controls = () => {
                                 : {}
                         }
                     >
-                        {message}
+                        {disc === null ? (loading ? 'LOADING...' : 'NO DISC') : message}
                     </span>
                 </div>
                 <div className={classes.lcdDisc}>

@@ -1,9 +1,18 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { belowDesktop, useShallowEqualSelector, getMetadataFromFile, removeExtension, secondsToNormal } from '../utils';
+import {
+    belowDesktop,
+    useShallowEqualSelector,
+    getMetadataFromFile,
+    removeExtension,
+    secondsToNormal,
+    getATRACWAVEncoding,
+    getATRACOMAEncoding,
+} from '../utils';
 
-import { actions as convertDialogActions, TitleFormatType } from '../redux/convert-dialog-feature';
+import { actions as convertDialogActions, TitleFormatType, UploadFormat } from '../redux/convert-dialog-feature';
 import { actions as renameDialogActions } from '../redux/rename-dialog-feature';
+import { actions as appActions } from '../redux/app-feature';
 import { convertAndUpload } from '../redux/actions';
 
 import Dialog from '@material-ui/core/Dialog';
@@ -17,12 +26,17 @@ import FormControl from '@material-ui/core/FormControl';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
 import { TransitionProps } from '@material-ui/core/transitions';
-import { Typography } from '@material-ui/core';
+import Typography from '@material-ui/core/Typography';
 import Select from '@material-ui/core/Select';
 import Input from '@material-ui/core/Input';
 import MenuItem from '@material-ui/core/MenuItem';
 import Accordion from '@material-ui/core/Accordion';
+import AccordionSummary from '@material-ui/core/AccordionSummary';
 import AccordionDetails from '@material-ui/core/AccordionDetails';
+import Checkbox from '@material-ui/core/Checkbox';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Slider from '@material-ui/core/Slider';
+import Tooltip from '@material-ui/core/Tooltip';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import ExpandLessIcon from '@material-ui/icons/ExpandLess';
 import AddIcon from '@material-ui/icons/Add';
@@ -42,6 +56,8 @@ import { W95ConvertDialog } from './win95/convert-dialog';
 import { batchActions } from 'redux-batched-actions';
 import { Disc, getCellsForTitle, getRemainingCharactersForTitles, Track } from 'netmd-js';
 import { sanitizeFullWidthTitle, sanitizeHalfWidthTitle } from 'netmd-js/dist/utils';
+import clsx from 'clsx';
+import { Link } from '@material-ui/core';
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement<any, any> },
@@ -102,13 +118,13 @@ const useStyles = makeStyles(theme => ({
     toolbarHighlight:
         theme.palette.type === 'light'
             ? {
-                  color: theme.palette.secondary.main,
-                  backgroundColor: lighten(theme.palette.secondary.light, 0.85),
-              }
+                color: theme.palette.secondary.main,
+                backgroundColor: lighten(theme.palette.secondary.light, 0.85),
+            }
             : {
-                  color: theme.palette.text.primary,
-                  backgroundColor: theme.palette.secondary.dark,
-              },
+                color: theme.palette.text.primary,
+                backgroundColor: theme.palette.secondary.dark,
+            },
     trackList: {
         flex: '1 1 auto',
     },
@@ -121,6 +137,35 @@ const useStyles = makeStyles(theme => ({
     },
     durationNotFit: {
         color: theme.palette.error.main,
+    },
+    timeTooltip: {
+        textDecoration: 'underline',
+        textDecorationStyle: 'dotted',
+        textUnderlineOffset: '3px',
+    },
+    durationsSpan: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginTop: theme.spacing(2),
+    },
+    advancedOptionsAccordion: {
+        boxShadow: 'none',
+        marginTop: theme.spacing(2),
+        '&:before': {
+            opacity: 0,
+        },
+    },
+    advancedOptionsAccordionContents: {
+        flexDirection: 'column',
+    },
+    advancedOptionsAccordionSummary: {
+        boxShadow: 'none',
+        minHeight: '32px !important',
+        height: '32px',
+        padding: 0,
+    },
+    advancedOption: {
+        width: '100%',
     },
 }));
 
@@ -138,24 +183,63 @@ export const ConvertDialog = (props: { files: File[] }) => {
         album: string;
         artist: string;
         duration: number;
+        forcedEncoding: UploadFormat | null;
+        bytesToSkip: number;
     };
     const [files, setFiles] = useState<FileWithMetadata[]>([]);
     const [selectedTrackIndex, setSelectedTrack] = useState(-1);
-    const [availableCharacters, setAvailableCharacters] = useState(0);
-    const [beforeConversionAvailableCharacters, setBeforeConversionAvailableCharacters] = useState(0);
+    const [availableCharacters, setAvailableCharacters] = useState<{ halfWidth: number; fullWidth: number }>({
+        fullWidth: 0,
+        halfWidth: 0,
+    });
+    const [beforeConversionAvailableCharacters, setBeforeConversionAvailableCharacters] = useState<{
+        halfWidth: number;
+        fullWidth: number;
+    }>({ fullWidth: 0, halfWidth: 0 });
     const [beforeConversionAvailableSeconds, setBeforeConversionAvailableSeconds] = useState(0);
     const [availableSeconds, setAvailableSeconds] = useState(0);
+    const [availableSPSeconds, setAvailableSPSeconds] = useState(0);
     const [loadingMetadata, setLoadingMetadata] = useState(true);
+
+    const fullWidthCharactersUsed = useMemo(() => {
+        return (
+            files
+                .map(
+                    e =>
+                        (e.title + e.album + e.artist)
+                            .split('')
+                            .map(n => n.charCodeAt(0))
+                            .filter(
+                                n =>
+                                    (n >= 0x3040 && n <= 0x309f) || // Hiragana
+                                    (n >= 0x4e00 && n <= 0x9faf) || // Kanji
+                                    (n >= 0x3400 && n <= 0x4dbf) // Rare kanji
+                            ).length
+                )
+                .filter(e => e > 0).length > 0
+        );
+    }, [files]);
 
     const loadMetadataFromFiles = async (files: File[]): Promise<FileWithMetadata[]> => {
         setLoadingMetadata(true);
         let titledFiles = [];
         for (let file of files) {
             let metadata = await getMetadataFromFile(file);
-            titledFiles.push({
-                file,
-                ...metadata,
-            });
+            let forcedEncoding: null | 'ILLEGAL' | { format: 'LP2' | 'LP4'; headerLength: number } = await getATRACWAVEncoding(file);
+            if (forcedEncoding === null) {
+                forcedEncoding = await getATRACOMAEncoding(file);
+            }
+
+            if (forcedEncoding === 'ILLEGAL') {
+                window.alert(`Cannot transfer file ${file.name}.`);
+            } else {
+                titledFiles.push({
+                    file,
+                    ...metadata,
+                    forcedEncoding: forcedEncoding?.format ?? null,
+                    bytesToSkip: forcedEncoding?.headerLength ?? 0,
+                });
+            }
         }
         setLoadingMetadata(false);
         return titledFiles;
@@ -167,7 +251,7 @@ export const ConvertDialog = (props: { files: File[] }) => {
                 convertDialogActions.setTitles(
                     files.map(file => {
                         let rawTitle = '';
-                        switch (titleFormat) {
+                        switch (format) {
                             case 'title': {
                                 rawTitle = file.title;
                                 break;
@@ -193,16 +277,21 @@ export const ConvertDialog = (props: { files: File[] }) => {
                                 break;
                             }
                         }
+                        const halfWidth = sanitizeHalfWidthTitle(rawTitle);
+                        const fullWidth = sanitizeFullWidthTitle(rawTitle);
+                        const halfAsFull = sanitizeFullWidthTitle(halfWidth);
                         return {
-                            title: sanitizeHalfWidthTitle(rawTitle),
-                            fullWidthTitle: fullWidthSupport ? sanitizeFullWidthTitle(rawTitle) : '',
+                            title: halfWidth,
+                            fullWidthTitle: fullWidthSupport && fullWidth !== halfAsFull ? fullWidth : '', // If there are no differences between half and full width, skip the full width
                             duration: file.duration,
+                            forcedEncoding: file.forcedEncoding as 'LP2' | 'LP4' | null,
+                            bytesToSkip: file.bytesToSkip,
                         };
                     })
                 )
             );
         },
-        [fullWidthSupport, titleFormat, dispatch]
+        [fullWidthSupport, dispatch]
     );
 
     const renameTrackManually = useCallback(
@@ -272,25 +361,55 @@ export const ConvertDialog = (props: { files: File[] }) => {
         [dispatch]
     );
 
+    const [tracksOrderVisible, setTracksOrderVisible] = useState(false);
+    const handleToggleTracksOrder = useCallback(() => {
+        setTracksOrderVisible(tracksOrderVisible => !tracksOrderVisible);
+    }, [setTracksOrderVisible]);
+
+    const [enableReplayGain, setEnableReplayGain] = useState(false);
+    const [enableNormalization, setEnableNormalization] = useState(false);
+    const [normalizationTarget, setNormalizationTarget] = useState<number>(-5);
+
+    const handleToggleReplayGain = useCallback(() => {
+        setEnableReplayGain(enableReplayGain => !enableReplayGain);
+        setEnableNormalization(false);
+    }, [setEnableReplayGain, setEnableNormalization]);
+
+    const handleToggleNormalization = useCallback(() => {
+        setEnableNormalization(enableNormalization => !enableNormalization);
+        setEnableReplayGain(false);
+    }, [setEnableNormalization]);
+    const handleNormalizationSliderChange = useCallback(
+        (evt: any, newValue: number | number[]) => {
+            setNormalizationTarget(newValue as number);
+        },
+        [setNormalizationTarget]
+    );
+
+    const handleToggleFullWidthSupport = useCallback(() => {
+        dispatch(appActions.setFullWidthSupport(!fullWidthSupport));
+    }, [dispatch, fullWidthSupport]);
+
     const handleConvert = useCallback(() => {
         handleClose();
+        setEnableReplayGain(false);
+        setEnableNormalization(false);
         dispatch(
             convertAndUpload(
                 titles.map((n, i) => ({ ...n, file: files[i].file })),
-                format
+                format,
+                {
+                    loudnessTarget: enableNormalization ? normalizationTarget : undefined,
+                    enableReplayGain,
+                }
             )
         );
-    }, [dispatch, titles, format, handleClose, files]);
-
-    const [tracksOrderVisible, setTracksOrderVisible] = useState(false);
-    const handleToggleTracksOrder = useCallback(() => {
-        setTracksOrderVisible(!tracksOrderVisible);
-    }, [tracksOrderVisible, setTracksOrderVisible]);
+    }, [dispatch, handleClose, titles, format, files, normalizationTarget, enableNormalization, enableReplayGain]);
 
     // Dialog init on new files
     useEffect(() => {
         const newFiles = Array.from(props.files);
-        setFiles(newFiles.map(n => ({ file: n, artist: '', album: '', title: '', duration: 0 }))); // If this line isn't present, the dialog doesn't show up
+        setFiles(newFiles.map(n => ({ file: n, artist: '', album: '', title: '', duration: 0, forcedEncoding: null, bytesToSkip: 0 }))); // If this line isn't present, the dialog doesn't show up
         loadMetadataFromFiles(newFiles)
             .then(withMetadata => {
                 setFiles(withMetadata);
@@ -298,14 +417,20 @@ export const ConvertDialog = (props: { files: File[] }) => {
             .catch(console.error);
         setSelectedTrack(-1);
         setTracksOrderVisible(false);
-        setAvailableCharacters(255);
+        setAvailableCharacters({ halfWidth: 1785, fullWidth: 1785 });
         setAvailableSeconds(1);
-        setBeforeConversionAvailableCharacters(1);
+        setBeforeConversionAvailableCharacters({ halfWidth: 1, fullWidth: 1 });
         setBeforeConversionAvailableSeconds(1);
     }, [props.files]);
 
     useEffect(() => {
         if (!disc) return;
+        const durationMultiplier = {
+            SP: 1,
+            LP2: 2,
+            LP4: 4,
+        }[format];
+
         let testedDisc = JSON.parse(JSON.stringify(disc)) as Disc;
         let ungrouped = testedDisc.groups.find(n => n.title === null);
         if (!ungrouped) {
@@ -324,10 +449,10 @@ export const ConvertDialog = (props: { files: File[] }) => {
             } as Track);
         }
         setAvailableCharacters(getRemainingCharactersForTitles(testedDisc));
-        let secondsLeft = disc.left / 512;
-        if (format === 'LP2') secondsLeft *= 2;
-        else if (format === 'LP4') secondsLeft *= 4;
-        setAvailableSeconds(secondsLeft - titles.reduce((a, b) => a + b.duration, 0));
+        let secondsLeft = (disc.left / 512) * durationMultiplier;
+        let totalTracksDuration = titles.reduce((a, b) => a + b.duration, 0);
+        setAvailableSeconds(secondsLeft - totalTracksDuration);
+        setAvailableSPSeconds(disc.left / 512 - totalTracksDuration / durationMultiplier);
         setBeforeConversionAvailableSeconds(secondsLeft);
         setBeforeConversionAvailableCharacters(getRemainingCharactersForTitles(disc));
     }, [disc, setAvailableCharacters, titles, format]);
@@ -349,12 +474,14 @@ export const ConvertDialog = (props: { files: File[] }) => {
 
     const renderTracks = useCallback(() => {
         let currentSeconds = beforeConversionAvailableSeconds;
-        let currentTextLeft = beforeConversionAvailableCharacters;
+        let { halfWidth: currentHalfWidthTextLeft, fullWidth: currentFullWidthTextLeft } = beforeConversionAvailableCharacters;
         return titles.map((file, i) => {
             const isSelected = selectedTrackIndex === i;
             const ref = isSelected ? selectedTrackRef : null;
             currentSeconds -= file.duration;
-            currentTextLeft -= getCellsForTitle(file as Track) * 7;
+            const { halfWidth, fullWidth } = getCellsForTitle(file as any);
+            currentHalfWidthTextLeft -= halfWidth * 7;
+            currentFullWidthTextLeft -= fullWidth * 7;
             return (
                 <ListItem
                     key={`${i}`}
@@ -368,9 +495,15 @@ export const ConvertDialog = (props: { files: File[] }) => {
                         <Radio checked={isSelected} value={`track-${i}`} size="small" />
                     </ListItemIcon>
                     <ListItemText
-                        className={currentSeconds <= 0 ? classes.durationNotFit : currentTextLeft < 0 ? classes.nameNotFit : undefined}
+                        className={
+                            currentSeconds <= 0
+                                ? classes.durationNotFit
+                                : currentHalfWidthTextLeft < 0 || currentFullWidthTextLeft < 0
+                                    ? classes.nameNotFit
+                                    : undefined
+                        }
                         primary={`${file.fullWidthTitle && file.fullWidthTitle + ' / '}${file.title}`}
-                        secondary={secondsToNormal(file.duration)}
+                        secondary={`${secondsToNormal(file.duration)} ${file.forcedEncoding ? `(${file.forcedEncoding})` : ''}`}
                     />
                 </ListItem>
             );
@@ -390,18 +523,21 @@ export const ConvertDialog = (props: { files: File[] }) => {
     // Add/Remove tracks
     const onDrop = useCallback(
         (acceptedFiles: File[], rejectedFiles: File[]) => {
-            loadMetadataFromFiles(acceptedFiles)
-                .then(acceptedTitledFiles => {
-                    const newFileArray = files.slice().concat(acceptedTitledFiles);
-                    setFiles(newFileArray);
-                })
-                .catch(console.error);
+            const bannedTypes = ['audio/mpegurl', 'audio/x-mpegurl'];
+            const accepted = acceptedFiles.filter(n => !bannedTypes.includes(n.type));
+            if (accepted.length > 0) {
+                loadMetadataFromFiles(accepted)
+                    .then(acceptedTitledFiles => {
+                        setFiles(files => files.slice().concat(acceptedTitledFiles));
+                    })
+                    .catch(console.error);
+            }
         },
-        [files, setFiles]
+        [setFiles]
     );
     const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
         onDrop,
-        accept: [`audio/*`, `video/mp4`],
+        accept: [`audio/*`, `video/mp4`, `video/webm`, `.oma`, `.at3`],
         noClick: true,
     });
     const disableRemove = selectedTrackIndex < 0 || selectedTrackIndex >= files.length;
@@ -513,11 +649,15 @@ export const ConvertDialog = (props: { files: File[] }) => {
                 <Typography
                     component="h3"
                     className={classes.nameNotFit}
-                    hidden={availableCharacters > 0}
+                    hidden={availableCharacters.halfWidth > 0 && availableCharacters.fullWidth > 0}
                     style={{ marginTop: '1em' }}
                     align="center"
                 >
-                    Warning: You have used up all the available characters. Some titles might get cut off.
+                    Warning: You have used up all the available{' '}
+                    {[availableCharacters.halfWidth > 0 ? 'half' : null, availableCharacters.fullWidth > 0 ? 'full' : null]
+                        .filter(n => n !== null)
+                        .join(' and ')}{' '}
+                    width characters. Some titles might get cut off.
                 </Typography>
                 <Typography
                     component="h3"
@@ -528,6 +668,55 @@ export const ConvertDialog = (props: { files: File[] }) => {
                 >
                     Warning: You have used up all the available space on the disc.
                 </Typography>
+                <span className={classes.durationsSpan}>
+                    <Typography component="h3" align="center" hidden={loadingMetadata}>
+                        Total:{' '}
+                        <Tooltip
+                            title={
+                                <React.Fragment>
+                                    <span>{`${secondsToNormal(((disc?.left ?? 0) / 512 - availableSPSeconds) * 2)} in LP2 Mode`}</span>
+                                    <br />
+                                    <span>{`${secondsToNormal(((disc?.left ?? 0) / 512 - availableSPSeconds) * 4)} in LP4 Mode`}</span>
+                                </React.Fragment>
+                            }
+                            arrow
+                        >
+                            <span className={classes.timeTooltip}>
+                                {secondsToNormal((disc?.left ?? 0) / 512 - availableSPSeconds)} SP time{' '}
+                            </span>
+                        </Tooltip>
+                    </Typography>
+                    <Typography
+                        component="h3"
+                        align="center"
+                        hidden={loadingMetadata}
+                        className={clsx({ [classes.durationNotFit]: availableSPSeconds <= 0 })}
+                    >
+                        Remaining:{' '}
+                        <Tooltip
+                            title={
+                                <React.Fragment>
+                                    <span>{`${secondsToNormal(availableSPSeconds * 2)} in LP2 Mode`}</span>
+                                    <br />
+                                    <span>{`${secondsToNormal(availableSPSeconds * 4)} in LP4 Mode`}</span>
+                                </React.Fragment>
+                            }
+                            arrow
+                        >
+                            <span className={classes.timeTooltip}>{secondsToNormal(availableSPSeconds)} SP time </span>
+                        </Tooltip>
+                    </Typography>
+                </span>
+                {!fullWidthSupport && fullWidthCharactersUsed ? (
+                    <Typography color="error" component="p">
+                        You seem to be trying to enter full-width text into the half-width slot.{' '}
+                        <Link onClick={handleToggleFullWidthSupport} color="error" underline="always" style={{ cursor: 'pointer' }}>
+                            Enable full-width title support
+                        </Link>
+                        ?
+                    </Typography>
+                ) : null}
+
                 <Typography component="h3" color="error" hidden={!loadingMetadata} style={{ marginTop: '1em' }} align="center">
                     Reading Metadata...
                 </Typography>
@@ -562,6 +751,42 @@ export const ConvertDialog = (props: { files: File[] }) => {
                         </Backdrop>
                         <input {...getInputProps()} />
                     </div>
+                </Accordion>
+                <Accordion className={classes.advancedOptionsAccordion} square={true}>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />} className={classes.advancedOptionsAccordionSummary}>
+                        Advanced Options
+                    </AccordionSummary>
+                    <AccordionDetails className={classes.advancedOptionsAccordionContents}>
+                        <FormControlLabel
+                            label={`Enable full width titles support`}
+                            className={classes.advancedOption}
+                            control={<Checkbox checked={fullWidthSupport} onChange={handleToggleFullWidthSupport} />}
+                        />
+
+                        <FormControlLabel
+                            label={`Use ReplayGain`}
+                            className={classes.advancedOption}
+                            control={<Checkbox checked={enableReplayGain} onChange={handleToggleReplayGain} />}
+                        />
+                        <FormControlLabel
+                            label={`Normalize tracks${enableNormalization ? ` to ${normalizationTarget} dB` : ''}`}
+                            className={classes.advancedOption}
+                            control={<Checkbox checked={enableNormalization} onChange={handleToggleNormalization} />}
+                        />
+                        <Slider
+                            min={-70}
+                            max={-5}
+                            step={0.2}
+                            marks={[
+                                { value: -70, label: '-70dB' },
+                                { value: -5, label: '-5dB' },
+                            ]}
+                            className={classes.advancedOption}
+                            value={normalizationTarget}
+                            onChange={handleNormalizationSliderChange}
+                            disabled={!enableNormalization}
+                        />
+                    </AccordionDetails>
                 </Accordion>
             </DialogContent>
             <DialogActions>

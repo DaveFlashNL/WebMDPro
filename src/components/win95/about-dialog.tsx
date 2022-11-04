@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, WindowHeader, Anchor } from 'react95';
 import { FooterButton, DialogOverlay, DialogWindow, DialogFooter, DialogWindowContent, WindowCloseIcon } from './common';
+import { GIT_DIFF, GIT_HASH, BUILD_DATE } from '../../version-info';
 
 export const W95AboutDialog = (props: { visible: boolean; handleClose: () => void }) => {
     if (!props.visible) {
@@ -48,6 +49,18 @@ export const W95AboutDialog = (props: { visible: boolean; handleClose: () => voi
                             , to send commands to NetMD devices using Javascript.
                         </li>
                         <li>
+                            <Anchor rel="noopener noreferrer" href="https://github.com/asivery/netmd-exploits" target="_blank">
+                                netmd-exploits
+                            </Anchor>
+                            , to download ATRAC via USB and trigger low-level firmware code.
+                        </li>
+                        <li>
+                            <Anchor rel="noopener noreferrer" href="https://github.com/asivery/netmd-tocmanip" target="_blank">
+                                netmd-tocmanip
+                            </Anchor>
+                            , to read and manipulate the table of contents.
+                        </li>
+                        <li>
                             <Anchor rel="noopener noreferrer" href="https://github.com/glaubitz/linux-minidisc" target="_blank">
                                 linux-minidisc
                             </Anchor>
@@ -66,6 +79,9 @@ export const W95AboutDialog = (props: { visible: boolean; handleClose: () => voi
                             , to build the user interface.
                         </li>
                     </ul>
+                    <p style={{ textAlign: 'center', fontSize: 13 }}>
+                        Version #{GIT_HASH} {(GIT_DIFF as any) === '0' ? '' : `(${GIT_DIFF} diff-lines ahead)`} built on {BUILD_DATE}
+                    </p>
                     <DialogFooter>
                         <FooterButton onClick={props.handleClose}>OK</FooterButton>
                     </DialogFooter>

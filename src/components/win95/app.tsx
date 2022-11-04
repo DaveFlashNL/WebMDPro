@@ -26,46 +26,47 @@ img {
 }
 `;
 
-const useStyles = (props: { showsList: boolean }) => makeStyles(theme => ({
-    desktop: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'teal',
-        display: 'flex',
-        justifyContent: 'center',
-    },
-    window: {
-        display: 'flex !important', // This is needed to override the styledComponent prop :(
-        flexDirection: 'column',
-        width: 'auto',
-        height: '100%',
-        [forAnyDesktop(theme)]: {
-            width: 600,
-            marginLeft: 'auto',
-            marginRight: 'auto',
-            height: props.showsList ? 600 : 200,
-            marginTop: theme.spacing(2),
+const useStyles = (props: { showsList: boolean }) =>
+    makeStyles(theme => ({
+        desktop: {
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'teal',
+            display: 'flex',
+            justifyContent: 'center',
         },
-        [forWideDesktop(theme)]: {
-            width: 700,
-            height: props.showsList ? 700 : 250,
-            marginTop: theme.spacing(2),
+        window: {
+            display: 'flex !important', // This is needed to override the styledComponent prop :(
+            flexDirection: 'column',
+            width: 'auto',
+            height: '100%',
+            [forAnyDesktop(theme)]: {
+                width: 600,
+                marginLeft: 'auto',
+                marginRight: 'auto',
+                height: props.showsList ? 600 : 200,
+                marginTop: theme.spacing(2),
+            },
+            [forWideDesktop(theme)]: {
+                width: 700,
+                height: props.showsList ? 700 : 250,
+                marginTop: theme.spacing(2),
+            },
         },
-    },
-    loading: {
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-}));
+        loading: {
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+    }));
 
 export const W95App = () => {
     const { mainView, loading } = useShallowEqualSelector(state => state.appState);
     const { deviceCapabilities } = useShallowEqualSelector(state => state.main);
-    const classes = useStyles({ showsList: mainView === "WELCOME" || deviceCapabilities.includes(Capability.contentList) })();
+    const classes = useStyles({ showsList: mainView === 'WELCOME' || deviceCapabilities.includes(Capability.contentList) })();
 
     const dispatch = useDispatch();
     const [isMenuOpen, setMenuOpen] = useState(false);
@@ -127,7 +128,8 @@ export const W95App = () => {
                         {' (c) '}
                         <Anchor rel="noopener noreferrer" color="inherit" target="_blank" href="https://stefano.brilli.me/">
                             Stefano Brilli
-                        </Anchor>{', '}
+                        </Anchor>
+                        {', '}
                         <Anchor rel="noopener noreferrer" color="inherit" target="_blank" href="https://github.com/asivery/">
                             Asivery
                         </Anchor>{' '}

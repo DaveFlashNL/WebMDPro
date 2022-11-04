@@ -22,6 +22,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .vscode/sftp.json
+.vscode/settings.json
 build-archived.zip
 WebMDPro.code-workspace
 

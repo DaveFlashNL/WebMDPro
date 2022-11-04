@@ -14,20 +14,18 @@ import App from './components/app';
 import './index.css';
 import './fonts/fonts.css';
 
-import { FFMpegAudioExportService } from './services/audio-export';
 import { MediaRecorderService } from './services/mediarecorder';
 import { BrowserMediaSessionService } from './services/media-session';
 import { listContent } from './redux/actions';
 
 // serviceRegistry.netmdService = (window as any).native?.interface || new NetMDUSBService({ debug: true });
 // serviceRegistry.netmdService = new NetMDMockService(); // Uncomment to work without a device attached
-serviceRegistry.netmdService = undefined;
-serviceRegistry.audioExportService = new FFMpegAudioExportService();
+// serviceRegistry.audioExportService = new FFMpegAudioExportService();
 serviceRegistry.mediaRecorderService = new MediaRecorderService();
 serviceRegistry.mediaSessionService = new BrowserMediaSessionService(store);
 
 Object.defineProperty(window, 'wmdVersion', {
-    value: '1.2.2',
+    value: '1.3.2',
     writable: false,
 });
 
@@ -46,7 +44,7 @@ if (localStorage.getItem('version') !== (window as any).wmdVersion) {
     });
 
     if (navigator && navigator.usb) {
-        navigator.usb.ondisconnect = function() {
+        navigator.usb.ondisconnect = function () {
             store.dispatch(appActions.setMainView('WELCOME'));
         };
     } else {
@@ -68,7 +66,6 @@ if (localStorage.getItem('version') !== (window as any).wmdVersion) {
 
 (function statusMonitorManager() {
     // Polls the device for its state while playing tracks
-    //let statusMonitorInterval: ReturnType<typeof setInterval> | null = null;
     let exceptionOccurred: boolean = false;
 
     function shouldMonitorBeRunning(state: ReturnType<typeof store.getState>): boolean {
@@ -85,7 +82,9 @@ if (localStorage.getItem('version') !== (window as any).wmdVersion) {
             state.recordDialog.visible === false &&
             state.panicDialog.visible === false &&
             state.errorDialog.visible === false &&
-            state.dumpDialog.visible === false
+            state.dumpDialog.visible === false &&
+            state.songRecognitionProgressDialog.visible === false &&
+            state.factoryProgressDialog.visible === false
         );
     }
 
@@ -102,7 +101,7 @@ if (localStorage.getItem('version') !== (window as any).wmdVersion) {
                     return;
                 }
                 if (!deviceStatus.discPresent && state.main.disc !== null) store.dispatch(mainActions.setDisc(null));
-                if (deviceStatus.discPresent && state.main.disc === null) await listContent()(store.dispatch);
+                if (deviceStatus.discPresent && state.main.disc === null) await listContent(true)(store.dispatch);
                 if (JSON.stringify(deviceStatus) !== JSON.stringify(state.main.deviceStatus)) {
                     store.dispatch(mainActions.setDeviceStatus(deviceStatus));
                 }
@@ -126,4 +125,8 @@ ReactDOM.render(
 if (process.env.REACT_APP_NO_GA_RELEASE !== 'true') {
     serviceWorker.register();
     // serviceWorker.unregister();
+}
+
+if ((module as any).hot) {
+    (module as any).hot.accept();
 }
