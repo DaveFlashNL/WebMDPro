@@ -1,0 +1,58 @@
+name: Deploy to web.minidisc.wiki
+
+# workflow is pushed on demand
+on:
+  [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+  # login to Azure using credentials in GH secrets
+    - uses: azure/login@v1
+      with:
+          creds: ${{ secrets.AZURE_CREDENTIALS_WMDFILES }}  
+
+  # not sure if this is the best way to organize YAML, but it works
+    - name: install dependencies
+      run: |
+          sudo apt-get update
+          sudo apt-get -y install libudev-dev libusb-1.0-0-dev git
+
+  # Cybercase's GH Action specifies 2.3.1 - does it need to be this version?
+    - name: checkout
+      uses: actions/checkout@v2.3.1   
+
+  # needs to be node 14 due to node-gyp issue
+    - name: change node version
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'  
+
+  # 'do not treat warnings as errors' per 'deploy-to-gh-pages.yml'
+    - name: install and build
+      run: |
+        npm install
+        npm run build
+      env:
+        CI: false
+
+  # uploads the contents of the 'build/' folder to the '$web/ folder on the 'wmdpro' storage account using the key held in GH secrets
+    - name: Upload to blob storage  
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+            az storage blob upload-batch --overwrite --account-name wmdpro --auth-mode key --account-key ${{ secrets.AZURE_STORAGEKEY_WMDFILES }} -d '$web' -s 'build/'
+
+  # clears everything on CDN profile 'wmd' endpoint 'web' which is inside resource group 'WMDpro'
+    - name: Purge CDN endpoint    
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az cdn endpoint purge --content-paths  "/*" --profile-name "web" --name "wmd" --resource-group "WMDpro"
+
+  # Azure logout
+    - name: logout
+      run: |
+            az logout
+      if: always()
