@@ -75,6 +75,14 @@ export const ChangelogDialog = (props: {}) => {
 
     const content = (
         <React.Fragment>
+            <h2 className={classes.header}>Version 1.3.4</h2>
+            <ul>
+                <li>New: Dark Mode now responds to your OS's theme changes</li>
+                <li>Fixed: Dark Mode toggle in topmenu is working again</li>
+                <li>Changes: Dark Mode-toggle does not hard-code the theme, so if you prefer dark while rest of the system is in light mode, it will go into dark mode and stay there when your system changes to dark mode based on your OS presets.</li>
+                <li>And then if the next morning your system changes back to light, Web MD Pro will also reset to light theme again.</li>
+            </ul>
+
             <h2 className={classes.header}>Version 1.3.3</h2>
             <ul>
                 <li>Added one-time auto theme selection based on system state on first visit</li>

@@ -1,7 +1,4 @@
 import React from 'react';
-/*import { AppearanceProvider } from 'react-native-appearance';
-import { Appearance, useColorScheme } from 'react-native-appearance';*/
-
 import { belowDesktop, forAnyDesktop, forWideDesktop, useShallowEqualSelector } from '../utils';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
@@ -110,28 +107,17 @@ const lightTheme = createTheme({
     },
 });
 
-function returnintialTheme() {
-    //const colorScheme = useColorScheme();
-    const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
-    if (colorScheme.matches) {
-        return darkTheme;
-    } else {
-        return lightTheme;
-    }
-}
-
 const App = () => {
-    const { mainView, loading, vintageMode } = useShallowEqualSelector(state => state.appState);
+    const { mainView, loading, darkMode, vintageMode } = useShallowEqualSelector(state => state.appState);
     const { deviceCapabilities } = useShallowEqualSelector(state => state.main);
     const classes = useStyles({ showsList: mainView === 'WELCOME' || deviceCapabilities.includes(Capability.contentList) })();
-
     if (vintageMode) {
         return <W95App />;
     }
 
     return (
         <React.Fragment>
-            <ThemeProvider theme={returnintialTheme()}>
+            <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
                 <CssBaseline />
 
                 <main className={classes.layout}>
@@ -161,7 +147,7 @@ const App = () => {
                         </Link>{' '}
                         {new Date().getFullYear()}
                         {'.'}<br /><br />
-                        {'(v1.3.3 ~ '}{GIT_HASH}{')'}<br />
+                        {'(v1.3.4 ~ '}{GIT_HASH}{')'}<br />
                         <sub>{'*Disclaimers moved to about box'}</sub>
                     </Typography>
                 </main>
@@ -172,7 +158,7 @@ const App = () => {
                     </Backdrop>
                 ) : null}
             </ThemeProvider>
-        </React.Fragment>
+        </React.Fragment >
     );
 };
 
