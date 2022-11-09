@@ -75,17 +75,6 @@ export const TopMenu = function (props: { onClick?: () => void }) {
     const [isShiftDown, setIsShiftDown] = React.useState(false);
     const menuOpen = Boolean(menuAnchorEl);
 
-    function themeListener() {
-        const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
-        colorScheme.addEventListener("change", (e) => {
-            if (e.matches) {
-                dispatch(appActions.setDarkMode(darkMode = true));
-            } else {
-                dispatch(appActions.setDarkMode(darkMode = false));
-            }
-        });
-    };
-
     const isCapable = (capability: Capability) => deviceCapabilities.includes(capability);
 
     const handleMenuOpen = useCallback(
@@ -435,7 +424,8 @@ export const TopMenu = function (props: { onClick?: () => void }) {
             </ListItemText>
         </MenuItem>
     );
-    themeListener();
+
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => { e.matches ? dispatch(appActions.setDarkMode(darkMode = true)) : dispatch(appActions.setDarkMode(darkMode = false)); });
 
     if (vintageMode) {
         const p = {
@@ -463,4 +453,6 @@ export const TopMenu = function (props: { onClick?: () => void }) {
             <input type="file" ref={hiddenFileInputRef} style={{ display: 'none' }} onChange={handleCSVImportFromFile} />
         </React.Fragment>
     );
+
+
 };

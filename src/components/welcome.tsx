@@ -103,6 +103,12 @@ export const Welcome = (props: {}) => {
     }
     // Access denied.
 
+    const [showWhyUnsupported, setWhyUnsupported] = useState(false);
+    const handleLearnWhy = (event: React.SyntheticEvent) => {
+        event.preventDefault();
+        setWhyUnsupported(true);
+    };
+
     const deleteCustom = useCallback(
         (event, index) => {
             event.stopPropagation();
@@ -110,12 +116,6 @@ export const Welcome = (props: {}) => {
         },
         [dispatch]
     );
-
-    const [showWhyUnsupported, setWhyUnsupported] = useState(false);
-    const handleLearnWhy = (event: React.SyntheticEvent) => {
-        event.preventDefault();
-        setWhyUnsupported(true);
-    };
 
     if (vintageMode) {
         const p = {
@@ -184,14 +184,14 @@ export const Welcome = (props: {}) => {
                 <TopMenu />
             </Box>
             <Typography component="h2" variant="body2">
-                Brings NetMD Devices to the Web
+                Brings NetMD-devices to the Web
             </Typography>
             <Box className={classes.main}>
                 {browserSupported ? (
                     <React.Fragment>
                         <div className={classes.connectContainer}>
                             <Typography component="h2" variant="subtitle1" align="center" className={classes.spacing}>
-                                Press the button to connect to a NetMD device
+                                Press the button to connect to a NetMD-device
                             </Typography>
 
                             <SplitButton

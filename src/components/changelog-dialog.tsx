@@ -75,6 +75,11 @@ export const ChangelogDialog = (props: {}) => {
 
     const content = (
         <React.Fragment>
+            <h2 className={classes.header}>Version 1.3.4a</h2>
+            <ul>
+                <li>Opttimized and streamlined the underlying dark mode programming code</li>
+            </ul>
+
             <h2 className={classes.header}>Version 1.3.4</h2>
             <ul>
                 <li>New: Dark Mode now responds to your OS's theme changes</li>
@@ -85,7 +90,7 @@ export const ChangelogDialog = (props: {}) => {
 
             <h2 className={classes.header}>Version 1.3.3</h2>
             <ul>
-                <li>Added one-time auto theme selection based on system state on first visit</li>
+                <li>Added one-time auto theme selection based on system state on first visit (dark/light modes)</li>
                 <li>Added current git hash to copyright footer text as build hash identifier</li>
             </ul>
 

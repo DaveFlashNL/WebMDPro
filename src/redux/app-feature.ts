@@ -28,36 +28,13 @@ export interface AppState {
 
 export const buildInitialState = (): AppState => {
 
-    var initialTheme = "not-set";
-
-    function setIntialTheme() {
-        const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
-        if (colorScheme.matches) {
-            if (initialTheme == 'not-set') {
-                initialTheme = 'darksys';
-                return true;
-            } else {
-                initialTheme = 'lightsys';
-                return false;
-            }
-        } else {
-            if (initialTheme == 'not-set') {
-                initialTheme = 'lightsys';
-                return false;
-            } else {
-                initialTheme = 'darksys';
-                return true;
-            }
-        }
-    }
-
     return {
         mainView: 'WELCOME',
         loading: false,
         pairingFailed: false,
         pairingMessage: ``,
         browserSupported: true,
-        darkMode: loadPreference('darkMode', setIntialTheme()),
+        darkMode: loadPreference('darkMode', window.matchMedia("(prefers-color-scheme: dark)").matches),
         vintageMode: loadPreference('vintageMode', false),
         changelogDialogVisible: false,
         aboutDialogVisible: false,

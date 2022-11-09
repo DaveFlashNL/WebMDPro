@@ -147,7 +147,7 @@ const App = () => {
                         </Link>{' '}
                         {new Date().getFullYear()}
                         {'.'}<br /><br />
-                        {'(v1.3.4 ~ '}{GIT_HASH}{')'}<br />
+                        {'(v1.3.4a ~ '}{GIT_HASH}{')'}<br />
                         <sub>{'*Disclaimers moved to about box'}</sub>
                     </Typography>
                 </main>
