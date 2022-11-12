@@ -75,6 +75,15 @@ export const ChangelogDialog = (props: {}) => {
 
     const content = (
         <React.Fragment>
+            <h2 className={classes.header}>Version 1.3.5</h2>
+            <ul>
+                <li>New: application is now more responsive on desktop computers</li>
+                <li>New: Remaining space on blank discs in one glance for all supported MD recording modes</li>
+                <li>Removed: double application title header</li>
+                <li>+ small fixes and improvements</li>
+                <li>+ added temporary unsupported message for visitors from Safari browser on index.html</li>
+            </ul>
+
             <h2 className={classes.header}>Version 1.3.4</h2>
             <sup>(.a: Streamlined underlying dark mode programming code)</sup>
             <ul>

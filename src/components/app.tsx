@@ -23,6 +23,8 @@ const useStyles = (props: { showsList: boolean }) =>
         layout: {
             width: 'auto',
             height: '100%',
+            paddingTop: '25px',
+            paddingBottom: '10px',
             [forAnyDesktop(theme)]: {
                 width: 600,
                 marginLeft: 'auto',
@@ -38,16 +40,9 @@ const useStyles = (props: { showsList: boolean }) =>
             display: 'flex',
             flexDirection: 'column',
             padding: theme.spacing(2),
-            height: 'calc(100% - 20px)',
-            [forAnyDesktop(theme)]: {
-                marginTop: theme.spacing(2),
-                marginBottom: theme.spacing(1),
-                padding: theme.spacing(3),
-                height: props.showsList ? 600 : 200,
-            },
-            [forWideDesktop(theme)]: {
-                height: props.showsList ? 700 : 250,
-            },
+            paddingTop: '25px',
+            height: 'calc(95% - 20px)',
+
         },
         bottomBar: {
             display: 'flex',
@@ -65,11 +60,12 @@ const useStyles = (props: { showsList: boolean }) =>
             },
             '& a:hover': {
                 textDecoration: 'underline',
-                color: '#222222',
+                color: '#2196f2',
             },
-            '& sub': {
-                fontSize: '8px',
+            '& div': {
+                fontSize: '12px',
                 verticalAlign: 'top',
+                color: '#555',
             },
         },
         backdrop: {
@@ -129,14 +125,14 @@ const App = () => {
                         <Box className={classes.controlsContainer}>{mainView === 'MAIN' ? <Controls /> : null}</Box>
                     </Paper>
                     <Typography variant="body2" color="textSecondary" className={classes.copyrightTypography}>
-                        {'© '}
+                        <br />{'© '}
                         <Link rel="noopener noreferrer" target="_blank" href="https://stefano.brilli.me">
                             Stefano Brilli
                         </Link>{' (original), this fork by '}
                         <Link rel="noopener noreferrer" target="_blank" href="https://github.com/asivery">
                             Asivery
                         </Link>{' \& '}
-                        <Link rel="noopener noreferrer" target="_blank" href="https://github.com/DaveFlashNL/WebMDPro">
+                        <Link rel="noopener noreferrer" target="_blank" href="https://github.com/DaveFlashNL">
                             me
                         </Link>{', proudly hosted on'}<br />
                         <Link rel="noopener noreferrer" target="_blank" href="https://www.servage.net">
@@ -146,9 +142,8 @@ const App = () => {
                             DaveFlash
                         </Link>{' '}
                         {new Date().getFullYear()}
-                        {'.'}<br /><br />
-                        {'(v1.3.4a ~ '}{GIT_HASH}{')'}<br />
-                        <sub>{'*Disclaimers moved to about box'}</sub>
+                        {'.'}<br />
+                        <div>{'v1.3.5 ~ '}{GIT_HASH}</div>
                     </Typography>
                 </main>
 

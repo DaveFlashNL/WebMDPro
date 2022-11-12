@@ -28,7 +28,6 @@
 </head>
 
 <body>
-  <h1>Web MiniDisc Pro</h1>
   <script>
     try {
       if (location.protocol !== 'file:' && location.protocol !== 'https:' && !location.host.match(/^localhost/gm)) {
@@ -46,7 +45,15 @@
   	uncomment as needed to put application in maintenance mode//!-->
   <!--//This version of WebMDPro is currently down for maintenance, <br />
     please visit <a href="https://web.minidisc.wiki">https://web.minidisc.wiki</a> in the mean time.//!-->
-  <div id="root"></div>
+  <div id="root">
+    <script> if (navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1) {
+        document.write("<div class\"MuiBox-root MuiBox-root-21 makeStyles-main-8\"><h2 class=\"MuiTypography-root makeStyles-spacing-12 MuiTypography-subtitle1 MuiTypography-alignCenter\">This Web browser is not supported.&nbsp;<br/><a class=\"MuiTypography-root MuiLink-root MuiLink-underlineHover MuiTypography-colorPrimary\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"https://www.google.com/chrome\"><img alt=\"Chrome Logo\" src=\"/static/media/chrome-icon.f3b6c54c.svg\" class=\"makeStyles-chromeLogo-13\" width=\"100px\"></a><h2 class=\"MuiTypography-root makeStyles-spacing-12 MuiTypography-subtitle1 MuiTypography-alignCenter\">Try using <a class=\"MuiTypography-root MuiLink-root MuiLink-underlineHover MuiTypography-colorPrimary\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"https://www.google.com/chrome\">Chrome</a> instead</h2><p class=\"MuiTypography-root makeStyles-why-14 MuiTypography-body2\">Web MiniDisc Pro requires a browser that supports both <a class=\"MuiTypography-root MuiLink-root MuiLink-underlineHover MuiTypography-colorPrimary\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"https://wicg.github.io/webusb\">WebUSB</a> and <a class=\"MuiTypography-root MuiLink-root MuiLink-underlineHover MuiTypography-colorPrimary\" rel=\"noopener noreferrer\" target=\"_blank\" href=\"https://webassembly.org\">WebAssembly</a>.</p><ul><li>WebUSB is needed to control the NetMD device via the USB connection to your computer.</li><li>WebAssembly is used to convert the music to a MiniDisc compatible format</li></ul></div>");
+      } else {
+        //do nothing
+      }
+    </script>
+
+  </div>
 
 </body>
 

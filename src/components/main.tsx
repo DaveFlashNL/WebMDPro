@@ -43,6 +43,7 @@ import TableRow from '@material-ui/core/TableRow';
 import IconButton from '@material-ui/core/IconButton';
 import Toolbar from '@material-ui/core/Toolbar';
 import Tooltip from '@material-ui/core/Tooltip';
+import * as BadgeImpl from '@material-ui/core/Badge/Badge';
 import { batchActions } from 'redux-batched-actions';
 
 import { GroupRow, TrackRow } from './main-rows';
@@ -126,16 +127,25 @@ const useStyles = makeStyles(theme => ({
         zIndex: theme.zIndex.drawer + 1,
         color: '#fff',
     },
-    remainingTimeTooltip: {
-        textDecoration: 'underline',
-        textDecorationStyle: 'dotted',
-    },
     hoveringOverGroup: {
         backgroundColor: `${alpha(theme.palette.secondary.dark, 0.4)}`,
     },
     dragHandleEmpty: {
         width: 20,
         padding: `${theme.spacing(0.5)}px 0 0 0`,
+    },
+    format: {
+        ...(BadgeImpl as any).styles(theme).badge,
+        ...(BadgeImpl as any).styles(theme).colorPrimary,
+        position: 'static',
+        display: 'inline-flex',
+        border: `2px solid ${theme.palette.background.paper}`,
+        padding: '0 4px',
+        verticalAlign: 'middle',
+        width: theme.spacing(4.5),
+        marginRight: theme.spacing(0.5),
+        textDecoration: 'underline',
+        textDecorationStyle: 'dotted',
     },
 }));
 
@@ -454,7 +464,7 @@ export const Main = (props: {}) => {
         <React.Fragment>
             <Box className={classes.headBox}>
                 <Typography component="h1" variant="h4">
-                    {deviceName || `Loading...`}
+                    Web Minidisc Pro
                 </Typography>
                 <span>
                     {isCapable(Capability.discEject) ? (
@@ -471,22 +481,43 @@ export const Main = (props: {}) => {
                     <TopMenu />
                 </span>
             </Box>
+            <Typography component="h1" variant="h6" className={classes.headBox}>
+                Connected device: {deviceName || `Loading...`}
+            </Typography>
             <Typography component="h2" variant="body2">
                 {disc !== null ? (
                     <React.Fragment>
-                        <span>{`${formatTimeFromFrames(disc.left, false)} left of ${formatTimeFromFrames(disc.total, false)} `}</span>
-                        <Tooltip
-                            title={
-                                <React.Fragment>
-                                    <span>{`${formatTimeFromFrames(disc.left * 2, false)} left in LP2 Mode`}</span>
-                                    <br />
-                                    <span>{`${formatTimeFromFrames(disc.left * 4, false)} left in LP4 Mode`}</span>
-                                </React.Fragment>
-                            }
-                            arrow
-                        >
-                            <span className={classes.remainingTimeTooltip}>SP Mode</span>
-                        </Tooltip>
+                        <span>{`Remaining time available of ${formatTimeFromFrames(disc.total, false)}:`} </span><br />
+                        <span>{`${formatTimeFromFrames(disc.left, false)} of `}
+                            <Tooltip
+                                title={
+                                    <span>{`This badge denotes both the the available space for a given recording mode as well as the mode used for the existing tracks on the disc listed below.`}</span>
+                                }
+                                arrow
+                            >
+                                <div className={classes.format}>SP</div>
+                            </Tooltip>
+                        </span><br />
+                        <span>{`${formatTimeFromFrames(disc.left * 2, false)} of `}
+                            <Tooltip
+                                title={
+                                    <span>{`LP2 as part of the MDLP standard, doubles the available recording time, but uses a newer codec.`}</span>
+                                }
+                                arrow
+                            >
+                                <div className={classes.format}>LP2</div>
+                            </Tooltip>
+                        </span><br />
+                        <span>{`${formatTimeFromFrames(disc.left * 4, false)} of `}
+                            <Tooltip
+                                title={
+                                    <span>{`LP4 (also part of MDLP) quadruples the available recording time. For both LP2 and LP4 however, you need an MDLP-capable unit to play such tracks.`}</span>
+                                }
+                                arrow
+                            >
+                                <div className={classes.format}>LP4</div>
+                            </Tooltip>
+                        </span>
                         <div className={classes.spacing} />
                         <LinearProgress
                             variant="determinate"
@@ -496,8 +527,9 @@ export const Main = (props: {}) => {
                     </React.Fragment>
                 ) : (
                     `No disc loaded`
-                )}
-            </Typography>
+                )
+                }
+            </Typography >
             <Toolbar
                 className={clsx(classes.toolbar, {
                     [classes.toolbarHighlight]: selectedCount > 0 || selectedGroupsCount > 0,
@@ -591,89 +623,93 @@ export const Main = (props: {}) => {
                     </Tooltip>
                 ) : null}
             </Toolbar>
-            {isCapable(Capability.contentList) ? (
-                <Box className={classes.main} {...getRootProps()} id="main">
-                    <input {...getInputProps()} />
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell className={classes.dragHandleEmpty}></TableCell>
-                                <TableCell className={classes.indexCell}>#</TableCell>
-                                <TableCell>Title</TableCell>
-                                <TableCell align="right">Duration</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <DragDropContext onDragEnd={handleDrop}>
-                            <TableBody>
-                                {groupedTracks.map((group, index) => (
-                                    <TableRow key={`${index}`}>
-                                        <TableCell colSpan={4} style={{ padding: '0' }}>
-                                            <Table size="small">
-                                                <Droppable droppableId={`${index}`} key={`${index}`}>
-                                                    {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => (
-                                                        <TableBody
-                                                            {...provided.droppableProps}
-                                                            ref={provided.innerRef}
-                                                            className={clsx({ [classes.hoveringOverGroup]: snapshot.isDraggingOver })}
-                                                        >
-                                                            {group.title !== null && (
-                                                                <GroupRow
-                                                                    group={group}
-                                                                    onRename={handleRenameGroup}
-                                                                    onDelete={handleDeleteGroup}
-                                                                    isSelected={selectedGroups.includes(group.index)}
-                                                                    isCapable={isCapable}
-                                                                    onSelect={handleSelectGroupClick}
-                                                                />
-                                                            )}
-                                                            {group.title === null && group.tracks.length === 0 && (
-                                                                <TableRow style={{ height: '1px' }} />
-                                                            )}
-                                                            {group.tracks.map((t, tidx) => (
-                                                                <Draggable
-                                                                    draggableId={`${group.index}-${t.index}`}
-                                                                    key={`t-${t.index}`}
-                                                                    index={tidx}
-                                                                    isDragDisabled={!isCapable(Capability.metadataEdit)}
-                                                                >
-                                                                    {(provided: DraggableProvided) => (
-                                                                        <TrackRow
-                                                                            track={t}
-                                                                            draggableProvided={provided}
-                                                                            inGroup={group.title !== null}
-                                                                            isSelected={selected.includes(t.index)}
-                                                                            trackStatus={getTrackStatus(t, deviceStatus)}
-                                                                            onSelect={handleSelectTrackClick}
-                                                                            onRename={handleRenameTrack}
-                                                                            onTogglePlayPause={handleTogglePlayPauseTrack}
-                                                                            isCapable={isCapable}
-                                                                        />
-                                                                    )}
-                                                                </Draggable>
-                                                            ))}
-                                                            {provided.placeholder}
-                                                        </TableBody>
-                                                    )}
-                                                </Droppable>
-                                            </Table>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </DragDropContext>
-                    </Table>
-                    {isDragActive && isCapable(Capability.trackUpload) ? (
-                        <Backdrop className={classes.backdrop} open={isDragActive}>
-                            Drop your Music to Upload
-                        </Backdrop>
-                    ) : null}
-                </Box>
-            ) : null}
-            {isCapable(Capability.trackUpload) ? (
-                <Fab color="primary" aria-label="add" className={classes.add} onClick={open}>
-                    <AddIcon />
-                </Fab>
-            ) : null}
+            {
+                isCapable(Capability.contentList) ? (
+                    <Box className={classes.main} {...getRootProps()} id="main">
+                        <input {...getInputProps()} />
+                        <Table size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell className={classes.dragHandleEmpty}></TableCell>
+                                    <TableCell className={classes.indexCell}>#</TableCell>
+                                    <TableCell>Title</TableCell>
+                                    <TableCell align="right">Duration</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <DragDropContext onDragEnd={handleDrop}>
+                                <TableBody>
+                                    {groupedTracks.map((group, index) => (
+                                        <TableRow key={`${index}`}>
+                                            <TableCell colSpan={4} style={{ padding: '0' }}>
+                                                <Table size="small">
+                                                    <Droppable droppableId={`${index}`} key={`${index}`}>
+                                                        {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => (
+                                                            <TableBody
+                                                                {...provided.droppableProps}
+                                                                ref={provided.innerRef}
+                                                                className={clsx({ [classes.hoveringOverGroup]: snapshot.isDraggingOver })}
+                                                            >
+                                                                {group.title !== null && (
+                                                                    <GroupRow
+                                                                        group={group}
+                                                                        onRename={handleRenameGroup}
+                                                                        onDelete={handleDeleteGroup}
+                                                                        isSelected={selectedGroups.includes(group.index)}
+                                                                        isCapable={isCapable}
+                                                                        onSelect={handleSelectGroupClick}
+                                                                    />
+                                                                )}
+                                                                {group.title === null && group.tracks.length === 0 && (
+                                                                    <TableRow style={{ height: '1px' }} />
+                                                                )}
+                                                                {group.tracks.map((t, tidx) => (
+                                                                    <Draggable
+                                                                        draggableId={`${group.index}-${t.index}`}
+                                                                        key={`t-${t.index}`}
+                                                                        index={tidx}
+                                                                        isDragDisabled={!isCapable(Capability.metadataEdit)}
+                                                                    >
+                                                                        {(provided: DraggableProvided) => (
+                                                                            <TrackRow
+                                                                                track={t}
+                                                                                draggableProvided={provided}
+                                                                                inGroup={group.title !== null}
+                                                                                isSelected={selected.includes(t.index)}
+                                                                                trackStatus={getTrackStatus(t, deviceStatus)}
+                                                                                onSelect={handleSelectTrackClick}
+                                                                                onRename={handleRenameTrack}
+                                                                                onTogglePlayPause={handleTogglePlayPauseTrack}
+                                                                                isCapable={isCapable}
+                                                                            />
+                                                                        )}
+                                                                    </Draggable>
+                                                                ))}
+                                                                {provided.placeholder}
+                                                            </TableBody>
+                                                        )}
+                                                    </Droppable>
+                                                </Table>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </DragDropContext>
+                        </Table>
+                        {isDragActive && isCapable(Capability.trackUpload) ? (
+                            <Backdrop className={classes.backdrop} open={isDragActive}>
+                                Drop your Music to Upload
+                            </Backdrop>
+                        ) : null}
+                    </Box>
+                ) : null
+            }
+            {
+                isCapable(Capability.trackUpload) ? (
+                    <Fab color="primary" aria-label="add" className={classes.add} onClick={open}>
+                        <AddIcon />
+                    </Fab>
+                ) : null
+            }
 
             <UploadDialog />
             <RenameDialog />
@@ -692,6 +728,6 @@ export const Main = (props: {}) => {
             <AboutDialog />
             <ChangelogDialog />
             <PanicDialog />
-        </React.Fragment>
+        </React.Fragment >
     );
 };

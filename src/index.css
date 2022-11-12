@@ -1,4 +1,5 @@
-body, html {
+body,
+html {
     height: 100%;
     width: 100%;
     position: fixed;
@@ -12,9 +13,11 @@ body, html {
 div {
     outline: none;
 }
+
 h1 {
     text-align: center;
 }
+
 h1 sup {
-	font-size: 8px;
+    font-size: 8px;
 }
