@@ -201,7 +201,7 @@ export const Welcome = (props: {}) => {
                     <React.Fragment>
                         <div className={classes.connectContainer}>
                             <Typography component="h2" variant="subtitle1" align="center" className={classes.spacing}>
-                                Press the button to connect to a NetMD-device
+                                Press to connect a NetMD-device
                             </Typography>
 
                             <SplitButton
