@@ -193,7 +193,7 @@ export const ChangelogDialog = (props: {}) => {
 
             <h2 className={classes.header}>Milestone 1.0.0</h2>
             <ul className={classes.list}>
-                <li>Milestone reached 🥳</li>
+                <li>Milestone reached <span role='img' aria-label='Face with Party Horn and Party Hat Emoji'>🥳</span></li>
                 <li>Hello there v1.0!</li>
                 <li>Previous versions are number from v0.3.1 downwards.</li>
             </ul>

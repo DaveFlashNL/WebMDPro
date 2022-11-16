@@ -103,6 +103,28 @@ const lightTheme = createTheme({
     },
 });
 
+const isDesktopApp = () => {
+    /* Renderer process
+    if (typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer') {
+        return true;
+    }
+    // Main process
+    if (typeof process !== 'undefined' && typeof process.versions === 'object' && !!process.versions.electron) {
+        return true;
+    }
+    // Detect the user agent when the `nodeIntegration` option is set to false
+    if (typeof navigator === 'object' && typeof navigator.userAgent === 'string' && navigator.userAgent.indexOf('Electron') >= 0) {
+        return true;
+    }
+    return false;*/
+    if (process.versions.hasOwnProperty('electron')) {
+        // Electron specific code
+        return true;
+    } else {
+        return false;
+    }
+};
+
 const App = () => {
     const { mainView, loading, darkMode, vintageMode } = useShallowEqualSelector(state => state.appState);
     const { deviceCapabilities } = useShallowEqualSelector(state => state.main);
@@ -124,27 +146,33 @@ const App = () => {
 
                         <Box className={classes.controlsContainer}>{mainView === 'MAIN' ? <Controls /> : null}</Box>
                     </Paper>
-                    <Typography variant="body2" color="textSecondary" className={classes.copyrightTypography}>
-                        <br />{'© '}
-                        <Link rel="noopener noreferrer" target="_blank" href="https://stefano.brilli.me">
-                            Stefano Brilli
-                        </Link>{' (original), this fork by '}
-                        <Link rel="noopener noreferrer" target="_blank" href="https://github.com/asivery">
-                            Asivery
-                        </Link>{' \& '}
-                        <Link rel="noopener noreferrer" target="_blank" href="https://github.com/DaveFlashNL">
-                            me
-                        </Link>{', proudly hosted on'}<br />
-                        <Link rel="noopener noreferrer" target="_blank" href="https://www.servage.net">
-                            ServageOne
-                        </Link>{' in the EU. All rights reserved. © ddMedia | '}
-                        <Link rel="noopener noreferrer" target="_blank" href="https://twitter.com/DaveFlash">
-                            DaveFlash
-                        </Link>{' '}
-                        {new Date().getFullYear()}
-                        {'.'}<br />
-                        <div>{'v1.3.5 ~ '}{GIT_HASH}</div>
-                    </Typography>
+                    {isDesktopApp() ? (
+                        <Typography variant="body2" color="textSecondary" className={classes.copyrightTypography}>
+                            <div><br />{'v1.3.5 ~ '}{GIT_HASH}</div>
+                        </Typography>
+                    ) : (
+                        <Typography variant="body2" color="textSecondary" className={classes.copyrightTypography}>
+                            <br />{'© '}
+                            <Link rel="noopener noreferrer" target="_blank" href="https://stefano.brilli.me">
+                                Stefano Brilli
+                            </Link>{' (original), this fork by '}
+                            <Link rel="noopener noreferrer" target="_blank" href="https://github.com/asivery">
+                                Asivery
+                            </Link>{' \& '}
+                            <Link rel="noopener noreferrer" target="_blank" href="https://github.com/DaveFlashNL">
+                                me
+                            </Link>{', proudly hosted on'}<br />
+                            <Link rel="noopener noreferrer" target="_blank" href="https://www.servage.net">
+                                ServageOne
+                            </Link>{' in the EU. All rights reserved. © ddMedia | '}
+                            <Link rel="noopener noreferrer" target="_blank" href="https://twitter.com/DaveFlash">
+                                DaveFlash
+                            </Link>{' '}
+                            {new Date().getFullYear()}
+                            {'.'}<br />
+                            <div>{'v1.3.5 ~ '}{GIT_HASH}</div>
+                        </Typography>
+                    )}
                 </main>
 
                 {loading ? (
