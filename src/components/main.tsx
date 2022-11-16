@@ -465,8 +465,8 @@ export const Main = (props: {}) => {
         <React.Fragment>
             <Box className={classes.headBox}>
                 {isDesktopApp() ? (
-                    <Typography component="h1" variant="h4">
-                        &nbsp;
+                    <Typography component="h1" variant="h6" className={classes.headBox}>
+                        Connected device: {deviceName || `Loading...`}
                     </Typography>
                 ) : (
                     <Typography component="h1" variant="h4">
@@ -488,9 +488,13 @@ export const Main = (props: {}) => {
                     <TopMenu />
                 </span>
             </Box>
-            <Typography component="h1" variant="h6" className={classes.headBox}>
-                Connected device: {deviceName || `Loading...`}
-            </Typography>
+            {isDesktopApp() ? (
+                null
+            ) : (
+                <Typography component="h1" variant="h6" className={classes.headBox}>
+                    Connected device: {deviceName || `Loading...`}
+                </Typography>
+            )}
             <Typography component="h2" variant="body2">
                 {disc !== null ? (
                     <React.Fragment>
