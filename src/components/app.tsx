@@ -119,8 +119,10 @@ const isDesktopApp = () => {
     return false;*/
     if (navigator.userAgent.indexOf('Electron') >= 0) {
         // Electron specific code
+        console.log(navigator.userAgent.toString());
         return true;
     } else {
+        console.log(navigator.userAgent.toString());
         return false;
     }
 };
@@ -171,7 +173,7 @@ const App = () => {
                             </Link>{' '}
                             {new Date().getFullYear()}
                             {'.'}<br />
-                            <div>{'v1.3.5 ~ '}{GIT_HASH}</div>
+                            <span>{'v1.3.5 ~ '}{GIT_HASH}</span>
                         </Typography>
                     )}
                 </main>
