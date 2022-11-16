@@ -30,6 +30,7 @@ import { IconButton } from '@material-ui/core';
 import { ChangelogDialog } from './changelog-dialog';
 import { initializeParameters } from '../custom-parameters';
 import { EncoderSetupDialog } from './encoder-setup-dialog';
+import { isDesktopApp } from './app';
 
 const useStyles = makeStyles(theme => ({
     main: {
@@ -178,14 +179,23 @@ export const Welcome = (props: {}) => {
     return (
         <React.Fragment>
             <Box className={classes.headBox}>
-                <Typography component="h1" variant="h4">
-                    Web MiniDisc Pro
-                </Typography>
+                {isDesktopApp() ? (
+                    <Typography component="h1" variant="h4">&nbsp;</Typography>
+                ) : (
+                    <Typography component="h1" variant="h4">
+                        Web MiniDisc Pro
+                    </Typography>
+                )}
                 <TopMenu />
             </Box>
-            <Typography component="h2" variant="body2">
-                Brings NetMD-devices to the Web
-            </Typography>
+            {isDesktopApp() ? (
+                <Typography component="h2" variant="body2">&nbsp;</Typography>
+            ) : (
+                <Typography component="h2" variant="body2">
+                    Brings NetMD-devices to the Web
+                </Typography>
+
+            )}
             <Box className={classes.main}>
                 {browserSupported ? (
                     <React.Fragment>

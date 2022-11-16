@@ -103,7 +103,7 @@ const lightTheme = createTheme({
     },
 });
 
-const isDesktopApp = () => {
+export const isDesktopApp = () => {
     /* Renderer process
     if (typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer') {
         return true;

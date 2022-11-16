@@ -67,6 +67,7 @@ import { FactoryModeNoticeDialog } from './factory/factory-notice-dialog';
 import { FactoryModeProgressDialog } from './factory/factory-progress-dialog';
 import { SongRecognitionDialog } from './song-recognition-dialog';
 import { SongRecognitionProgressDialog } from './song-recognition-progress-dialog';
+import { isDesktopApp } from './app';
 
 const useStyles = makeStyles(theme => ({
     add: {
@@ -463,9 +464,15 @@ export const Main = (props: {}) => {
     return (
         <React.Fragment>
             <Box className={classes.headBox}>
-                <Typography component="h1" variant="h4">
-                    Web Minidisc Pro
-                </Typography>
+                {isDesktopApp() ? (
+                    <Typography component="h1" variant="h4">
+                        &nbsp;
+                    </Typography>
+                ) : (
+                    <Typography component="h1" variant="h4">
+                        Web Minidisc Pro
+                    </Typography>
+                )}
                 <span>
                     {isCapable(Capability.discEject) ? (
                         <IconButton
