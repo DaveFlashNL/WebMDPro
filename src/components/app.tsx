@@ -148,7 +148,7 @@ const App = () => {
                     </Paper>
                     {isDesktopApp() ? (
                         <Typography variant="body2" color="textSecondary" className={classes.copyrightTypography}>
-                            <div><br />{'v1.3.5 ~ '}{GIT_HASH}<br />{document.write(navigator.userAgent)}</div>
+                            <div><br />{'v1.3.5 ~ '}{GIT_HASH}<br />{document.write(navigator.userAgent.toString())}</div>
 
                         </Typography>
                     ) : (
