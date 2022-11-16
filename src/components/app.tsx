@@ -117,7 +117,7 @@ const isDesktopApp = () => {
         return true;
     }
     return false;*/
-    if (process.versions.hasOwnProperty('electron')) {
+    if (navigator.userAgent.indexOf('Electron') >= 0) {
         // Electron specific code
         return true;
     } else {
