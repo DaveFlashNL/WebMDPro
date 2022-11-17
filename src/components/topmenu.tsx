@@ -396,7 +396,7 @@ export const TopMenu = function (props: { onClick?: () => void }) {
             <ListItemText>
                 <Link
                     rel="noopener noreferrer"
-                    href="https://github.com/cybercase/webminidisc/wiki/Support-and-FAQ"
+                    href="https://www.minidisc.wiki/guides/start"
                     target="_blank"
                     ref={helpLinkRef}
                     onClick={handleHelpLink}

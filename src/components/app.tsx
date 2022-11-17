@@ -17,6 +17,7 @@ import { W95App } from './win95/app';
 import { Capability } from '../services/netmd';
 import Toc from './factory/factory';
 import { GIT_HASH } from '../version-info';
+import { isDesktopApp } from '../redux/main-feature';
 
 const useStyles = (props: { showsList: boolean }) =>
     makeStyles(theme => ({
@@ -102,30 +103,6 @@ const lightTheme = createTheme({
         type: 'light',
     },
 });
-
-export const isDesktopApp = () => {
-    /* Renderer process
-    if (typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer') {
-        return true;
-    }
-    // Main process
-    if (typeof process !== 'undefined' && typeof process.versions === 'object' && !!process.versions.electron) {
-        return true;
-    }
-    // Detect the user agent when the `nodeIntegration` option is set to false
-    if (typeof navigator === 'object' && typeof navigator.userAgent === 'string' && navigator.userAgent.indexOf('Electron') >= 0) {
-        return true;
-    }
-    return false;*/
-    if (navigator.userAgent.indexOf('Electron') >= 0) {
-        // Electron specific code
-        console.log(navigator.userAgent.toString());
-        return true;
-    } else {
-        console.log(navigator.userAgent.toString());
-        return false;
-    }
-};
 
 const App = () => {
     const { mainView, loading, darkMode, vintageMode } = useShallowEqualSelector(state => state.appState);

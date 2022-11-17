@@ -46,6 +46,16 @@ import Tooltip from '@material-ui/core/Tooltip';
 import * as BadgeImpl from '@material-ui/core/Badge/Badge';
 import { batchActions } from 'redux-batched-actions';
 
+import ListSubheader from '@material-ui/core/ListSubheader';
+import List from '@material-ui/core/List';
+import ListItemButton from '@material-ui/core/ListItem';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemText from '@material-ui/core/ListItemText';
+import ExpandLess from '@material-ui/icons/ExpandLess';
+import ExpandMore from '@material-ui/icons/ExpandMore';
+import StarBorder from '@material-ui/icons/StarBorder';
+
+
 import { GroupRow, TrackRow } from './main-rows';
 import { RenameDialog } from './rename-dialog';
 import { UploadDialog } from './upload-dialog';
@@ -67,7 +77,7 @@ import { FactoryModeNoticeDialog } from './factory/factory-notice-dialog';
 import { FactoryModeProgressDialog } from './factory/factory-progress-dialog';
 import { SongRecognitionDialog } from './song-recognition-dialog';
 import { SongRecognitionProgressDialog } from './song-recognition-progress-dialog';
-import { isDesktopApp } from './app';
+import { isDesktopApp } from '../redux/main-feature';
 
 const useStyles = makeStyles(theme => ({
     add: {

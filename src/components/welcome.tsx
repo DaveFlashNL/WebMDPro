@@ -30,7 +30,7 @@ import { IconButton } from '@material-ui/core';
 import { ChangelogDialog } from './changelog-dialog';
 import { initializeParameters } from '../custom-parameters';
 import { EncoderSetupDialog } from './encoder-setup-dialog';
-import { isDesktopApp } from './app';
+import { isDesktopApp } from '../redux/main-feature';
 
 const useStyles = makeStyles(theme => ({
     main: {
@@ -180,7 +180,7 @@ export const Welcome = (props: {}) => {
         <React.Fragment>
             <Box className={classes.headBox}>
                 {isDesktopApp() ? (
-                    <Typography component="h1" variant="h4">&nbsp;</Typography>
+                    null
                 ) : (
                     <Typography component="h1" variant="h4">
                         Web MiniDisc Pro
@@ -189,7 +189,7 @@ export const Welcome = (props: {}) => {
                 <TopMenu />
             </Box>
             {isDesktopApp() ? (
-                <Typography component="h2" variant="body2">&nbsp;</Typography>
+                null
             ) : (
                 <Typography component="h2" variant="body2">
                     Brings NetMD-devices to the Web
@@ -221,18 +221,22 @@ export const Welcome = (props: {}) => {
                                 <FormHelperText>{pairingMessage}</FormHelperText>
                             </FormControl>
                         </div>
-                        <div>
-                            <Typography component="h2" variant="subtitle1" align="center" className={classes.spacing}>
-                                <Link
-                                    rel="noopener noreferrer"
-                                    target="_blank"
-                                    href="https://github.com/cybercase/webminidisc/wiki/Support-and-FAQ"
-                                >
-                                    <span style={{ verticalAlign: 'middle' }}>Support and FAQ</span>{' '}
-                                    <OpenInNewIcon style={{ verticalAlign: 'middle' }} fontSize="inherit" />
-                                </Link>
-                            </Typography>
-                        </div>
+                        {isDesktopApp() ? (
+                            null
+                        ) : (
+                            <div>
+                                <Typography component="h2" variant="subtitle1" align="center" className={classes.spacing}>
+                                    <Link
+                                        rel="noopener noreferrer"
+                                        target="_blank"
+                                        href="https://www.minidisc.wiki/guides/start"
+                                    >
+                                        <span style={{ verticalAlign: 'middle' }}>Support and FAQ</span>{' '}
+                                        <OpenInNewIcon style={{ verticalAlign: 'middle' }} fontSize="inherit" />
+                                    </Link>
+                                </Typography>
+                            </div>
+                        )}
                     </React.Fragment>
                 ) : (
                     <React.Fragment>

@@ -1,8 +1,6 @@
 # Web MiniDisc Pro
 *Brings NetMD devices to the web*
 
-###### <ins>(Please read) Important changes for macOS developers on ARM-based Macs listed below.</ins>
-
 ### Differences between [Web Minidisc](https://github.com/cybercase/webminidisc) and Web Minidisc Pro
 As per request of the original creator, all future changes by Asivery will be implemented on his [fork](https://github.com/asivery/webminidisc), and subsequently mirrored to this fork, while here, I, DaveFlash, as a webdeveloper, will focus mainly on the UI/UX side of things and less on the technical.
 (parts of this README are written by others from their perspectives as this is a fork of off another fork, unless stated as written by this repo's owner, me DaveFlash)
@@ -19,6 +17,31 @@ How it works @ [https://www.youtube.com/watch?v=Frs8qhw0g9Y](https://www.youtube
 Blogpost @ [https://stefano.brilli.me/blog/web-minidisc](https://stefano.brilli.me/blog/web-minidisc)
 
 Requires *Chrome* or any other browser that supports both **WASM** and **WebUSB**
+
+### Don't know what a MiniDisc is?
+
+- Where to start -> [MiniDisc on Wikipedia](https://en.wikipedia.org/wiki/MiniDisc)
+- Community -> [reddit](https://www.reddit.com/r/minidisc/) & [discord](https://discord.gg/Vm29q3nuUk)
+- Socials -> [twitter](https://twitter.com/minidisc_wiki), [instagram](https://wwww.instagram.com/MiniDisc_wiki/) & [FaceBook](https://www.facebook.com/onlyminidisc/) (Only MiniDisc Asia)
+- MiniDisci.wiki -> [https://www.minidisc.wiki/](https://www.minidisc.wiki/)
+
+### How to Contribute
+Every contribute is welcome but, please, reach out to me before working on any PR. I've built this app mainly for personal use and I wish to keep it as light as possible in terms of features.
+
+### Bugs and Issues
+There might be plenty of them, for sure :) . The thing is that I've not the time to fix all of them and to make sure this app works on every browser or device.
+
+The best way to get a bug fixed, a feature implemented, or a device supported, is to fork the project and do it for yourself. I'll try to provide support as best as I can.
+
+### How to build
+
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app), so you can run:
+- `npm start` to start the development server
+- `npm i` to install node modules and dependencies
+- `npm build` to build for production
+
+WASM modules are provided in the `public/` directory. However, if you wish to build those binaries yourself, instructions are provided in the `extra/` directory.
+
 
 ## Linux
 Follow the instructions here [https://github.com/glaubitz/linux-minidisc/tree/master/netmd/etc](https://github.com/glaubitz/linux-minidisc/tree/master/netmd/etc) to grant your user access to the device. If you skip this step you'll likely get an *Access denied* message when trying to connect.
@@ -64,42 +87,20 @@ You can find installation instruction [here](https://docs.microsoft.com/en-us/wi
 
 ## Further information:
 
-#### Don't know what a MiniDisc is?
-
-- Where to start -> [https://en.wikipedia.org/wiki/MiniDisc](https://en.wikipedia.org/wiki/MiniDisc)
-- Community -> [https://www.reddit.com/r/minidisc/](https://www.reddit.com/r/minidisc/)
-
-### How to build
-
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app), so you can run:
-- `npm start` to start the development server
-- `npm i` to install node modules and dependencies
-- `npm build` to build for production
-
-WASM modules are provided in the `public/` directory. However, if you wish to build those binaries yourself, instructions are provided in the `extra/` directory.
-
-
-### How to Contribute
-Every contribute is welcome but, please, reach out to me before working on any PR. I've built this app mainly for personal use and I wish to keep it as light as possible in terms of features.
-
-### Bugs and Issues
-There might be plenty of them, for sure :) . The thing is that I've not the time to fix all of them and to make sure this app works on every browser or device.
-
-The best way to get a bug fixed, a feature implemented, or a device supported, is to fork the project and do it for yourself. I'll try to provide support as best as I can.
-
-### Backstory
-A few weeks ago I've found my old [MZ-N710](https://www.minidisc.org/part_Sony_MZ-N710.html) in the basement of my parents' house.
+### Original backstory by cybercase
+When I found my old [MZ-N710](https://www.minidisc.org/part_Sony_MZ-N710.html) in the basement of my parents' house.
 
 Determined to make it work on my modern Mac, after some googling, I found out about the [linux-minidisc](https://github.com/glaubitz/linux-minidisc) project. They've done an amazing job in reversing the NetMD protocol.
 
 After a quick inspection to the source code I realized the project could be easily ported to javascript (either node and the browser) using the WebUSB api, so I created [netmd-js](https://github.com/cybercase/netmd-js). Then, on top of that I've built **Web MiniDisc** to manage the music on my device without the need of downloading and installing any dedicated software.
 
 That's it. It was a LOT of fun :).
+____
 
 ### Some OSS used:
 - [FFmpeg](https://www.ffmpeg.org/) and [ffmpegjs](https://github.com/ffmpegjs/FFmpeg), to read audio files (wav, mp3, ogg, mp4, etc...).
 - [Atracdenc](https://github.com/dcherednik/atracdenc/), to support atrac3 encoding (lp2, lp4 audio formats).
 - [Emscripten](https://emscripten.org/), to run both FFmpeg and Atracdenc in the browser.
-- [netmd-js](https://github.com/cybercase/netmd-js), to send commands to NetMD devices using Javascript.
+- [netmd-js](https://github.com/cybercase/netmd-js), forked from cybercase, to send commands to NetMD devices using Javascript.
 - [material-ui](https://material-ui.com/), to build the user interface.
 - [linux-minidisc](https://github.com/linux-minidisc/linux-minidisc), to build the netmd-js library.

@@ -53,7 +53,7 @@ const useStyles = makeStyles(theme => ({
     },
 }));
 
-export const FactoryTopMenu = function(props: { onClick?: () => void }) {
+export const FactoryTopMenu = function (props: { onClick?: () => void }) {
     const classes = useStyles();
     const dispatch = useDispatch();
 
@@ -322,7 +322,7 @@ export const FactoryTopMenu = function(props: { onClick?: () => void }) {
             <ListItemText>
                 <Link
                     rel="noopener noreferrer"
-                    href="https://github.com/cybercase/webminidisc/wiki/Support-and-FAQ"
+                    href="https://www.minidisc.wiki/guides/start"
                     target="_blank"
                     ref={helpLinkRef}
                     onClick={handleHelpLink}
@@ -340,7 +340,7 @@ export const FactoryTopMenu = function(props: { onClick?: () => void }) {
             <ListItemText>
                 <Link
                     rel="noopener noreferrer"
-                    href="https://github.com/asivery/webminidisc"
+                    href="https://github.com/DaveFlashNL/WebMDPro"
                     target="_blank"
                     ref={githubLinkRef}
                     onClick={handleGithubLink}
