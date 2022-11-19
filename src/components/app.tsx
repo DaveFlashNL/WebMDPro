@@ -127,7 +127,7 @@ const App = () => {
                     </Paper>
                     {isDesktopApp() ? (
                         <Typography variant="body2" color="textSecondary" className={classes.copyrightTypography}>
-                            <div><br />{'v1.3.5 ~ '}{GIT_HASH}</div>
+                            <div><br />{'v1.3.6 ~ '}{GIT_HASH}</div>
 
                         </Typography>
                     ) : (
@@ -150,7 +150,7 @@ const App = () => {
                             </Link>{' '}
                             {new Date().getFullYear()}
                             {'.'}<br />
-                            <span>{'v1.3.5 ~ '}{GIT_HASH}</span>
+                            <span>{'v1.3.6 ~ '}{GIT_HASH}</span>
                         </Typography>
                     )}
                 </main>

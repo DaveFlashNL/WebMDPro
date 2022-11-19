@@ -173,7 +173,7 @@ export const AboutDialog = (props: {}) => {
                     Links to all authors of this software are included in the copyright section on the bottom of the site
                 </Typography>
                 <DialogContentText style={{ textAlign: 'center', fontSize: 13 }}>
-                    Version #{GIT_HASH} {(GIT_DIFF as any) === '0' ? '' : `(${GIT_DIFF} diff-lines ahead)`} built on {BUILD_DATE}
+                    Version 1.3.6 <i>b</i>#{GIT_HASH} {(GIT_DIFF as any) === '0' ? '' : `(${GIT_DIFF} diff-lines ahead)`} built on {BUILD_DATE}
                 </DialogContentText>
             </DialogContent>
             <DialogActions>

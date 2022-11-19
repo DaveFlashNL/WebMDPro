@@ -75,6 +75,13 @@ export const ChangelogDialog = (props: {}) => {
 
     const content = (
         <React.Fragment>
+            <h2 className={classes.header}>Version 1.3.6</h2>
+            <ul>
+                <li>Changed: web-specific application verbatim is now conditionally hidden from view (Applies only when running in Electron)</li>
+                <li>Improved: MD recording modes legend</li>
+                <li>Redesigned: top header layout</li>
+                <li>+ the usual fixes and improvements</li>
+            </ul>
             <h2 className={classes.header}>Version 1.3.5</h2>
             <ul>
                 <li>New: application is now more responsive on desktop computers</li>

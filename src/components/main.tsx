@@ -33,6 +33,9 @@ import EditIcon from '@material-ui/icons/Edit';
 import Backdrop from '@material-ui/core/Backdrop';
 import CreateNewFolderIcon from '@material-ui/icons/CreateNewFolder';
 import EjectIcon from '@material-ui/icons/Eject';
+import ArrowDropDownCircleOutlined from '@material-ui/icons/ArrowDropDownCircleOutlined';
+import { ReactComponent as MDLPIcon } from '../images/MDLP.svg';
+import { ReactComponent as MDIcon } from '../images/minidisclogo.svg';
 
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -45,16 +48,6 @@ import Toolbar from '@material-ui/core/Toolbar';
 import Tooltip from '@material-ui/core/Tooltip';
 import * as BadgeImpl from '@material-ui/core/Badge/Badge';
 import { batchActions } from 'redux-batched-actions';
-
-import ListSubheader from '@material-ui/core/ListSubheader';
-import List from '@material-ui/core/List';
-import ListItemButton from '@material-ui/core/ListItem';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import ListItemText from '@material-ui/core/ListItemText';
-import ExpandLess from '@material-ui/icons/ExpandLess';
-import ExpandMore from '@material-ui/icons/ExpandMore';
-import StarBorder from '@material-ui/icons/StarBorder';
-
 
 import { GroupRow, TrackRow } from './main-rows';
 import { RenameDialog } from './rename-dialog';
@@ -158,6 +151,51 @@ const useStyles = makeStyles(theme => ({
         textDecoration: 'underline',
         textDecorationStyle: 'dotted',
     },
+    MDlogo: {
+        verticalAlign: 'middle',
+        textAlign: 'center',
+        maxWidth: '27px',
+        maxHeight: '25.5px',
+    },
+    MDLP: {
+        cellSpacing: '2px',
+        borderCollapse: 'collapse',
+        borderSpacing: '2px',
+    },
+    MDLPTable: {
+        marginLeft: '-1px',
+        cellSpacing: '2px',
+        borderCollapse: 'collapse',
+        borderSpacing: '2px',
+        "td": {
+            padding: '2px',
+        },
+        "tr": {
+            padding: '2px',
+        },
+    },
+    MDLPbtn: {
+        display: 'inline-flex',
+        verticalAlign: 'middle',
+        textAlign: 'center',
+        "& :hover": {
+            color: "#000",
+        }
+    },
+    MDLPbtninner:
+        theme.palette.type === 'light'
+            ? {
+                color: '#3f51b5',
+            }
+            : {
+                color: '#2196f3',
+            },
+    MDLPopen: {
+        transform: 'rotate(180deg)',
+    },
+    MDLabelName: {
+        fontWeight: 'bold',
+    },
 }));
 
 function getTrackStatus(track: Track, deviceStatus: DeviceStatus | null): 'playing' | 'paused' | 'none' {
@@ -188,6 +226,7 @@ export const Main = (props: {}) => {
     const [uploadedFiles, setUploadedFiles] = React.useState<File[]>([]);
     const [lastClicked, setLastClicked] = useState(-1);
     const [moveMenuAnchorEl, setMoveMenuAnchorEl] = React.useState<null | HTMLElement>(null);
+    const [hiddenMDLPModes, setActive] = useState(true);
 
     const handleShowMoveMenu = useCallback(
         (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -470,6 +509,31 @@ export const Main = (props: {}) => {
         };
         return <W95Main {...p} />;
     }
+    const isMac = () => {
+        if (navigator.userAgent.indexOf('Mac') >= 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    const hideMDLP = () => {
+        let lp24 = document.getElementById("LP24");
+        lp24?.toggleAttribute("hidden");
+        setActive(!hiddenMDLPModes);
+    }
+    const convertTimeToDiscLabel = (e: number) => {
+        let HHMMSSTimeFromFrames = formatTimeFromFrames(e, false)
+        if (HHMMSSTimeFromFrames === "01:20:59") {
+            return "MD80";
+        } else if (HHMMSSTimeFromFrames === "01:14:59") {
+            return "MD74";
+        } else if (HHMMSSTimeFromFrames === "01:00:59") {
+            return "MD60";
+        } else {
+            //unknown disc format, so returns the time inferred from frames as normal
+            return HHMMSSTimeFromFrames
+        }
+    }
 
     return (
         <React.Fragment>
@@ -499,16 +563,17 @@ export const Main = (props: {}) => {
                 </span>
             </Box>
             {isDesktopApp() ? (
-                null
+                isMac() ? (null) : (<Typography component="h1" variant="h6" className={classes.headBox}>nbsp;</Typography>)
             ) : (
                 <Typography component="h1" variant="h6" className={classes.headBox}>
                     Connected device: {deviceName || `Loading...`}
                 </Typography>
             )}
+
             <Typography component="h2" variant="body2">
                 {disc !== null ? (
                     <React.Fragment>
-                        <span>{`Remaining time available of ${formatTimeFromFrames(disc.total, false)}:`} </span><br />
+                        <span>{`Remaining time available of `}<span className={classes.MDLabelName}>{`${convertTimeToDiscLabel(disc.total)}:`}</span></span><br />
                         <span>{`${formatTimeFromFrames(disc.left, false)} of `}
                             <Tooltip
                                 title={
@@ -518,27 +583,35 @@ export const Main = (props: {}) => {
                             >
                                 <div className={classes.format}>SP</div>
                             </Tooltip>
-                        </span><br />
-                        <span>{`${formatTimeFromFrames(disc.left * 2, false)} of `}
+                            &nbsp;<MDIcon className={classes.MDlogo} />&nbsp;
                             <Tooltip
                                 title={
-                                    <span>{`LP2 as part of the MDLP standard, doubles the available recording time, but uses a newer codec.`}</span>
+                                    <span>{hiddenMDLPModes ? 'Show' : 'Hide'}{` MDLP-recording time.`}</span>
                                 }
                                 arrow
                             >
-                                <div className={classes.format}>LP2</div>
+                                <span className={classes.MDLPbtn} aria-label="MDLP-modes" onClick={hideMDLP}>{hiddenMDLPModes ? <ArrowDropDownCircleOutlined className={classes.MDLPbtninner} /> : <ArrowDropDownCircleOutlined className={classes.MDLPbtninner + ' ' + classes.MDLPopen} />}</span>
                             </Tooltip>
-                        </span><br />
-                        <span>{`${formatTimeFromFrames(disc.left * 4, false)} of `}
-                            <Tooltip
-                                title={
-                                    <span>{`LP4 (also part of MDLP) quadruples the available recording time. For both LP2 and LP4 however, you need an MDLP-capable unit to play such tracks.`}</span>
-                                }
-                                arrow
-                            >
-                                <div className={classes.format}>LP4</div>
-                            </Tooltip>
-                        </span>
+                        </span><span className={classes.MDLP} id="LP24" hidden={true}>
+                            <table className={classes.MDLPTable}><thead><tr><td>{`${formatTimeFromFrames(disc.left * 2, false)} of `}
+                                <Tooltip
+                                    title={
+                                        <span>{`LP2 as part of the MDLP standard, doubles the available recording time, but uses a newer codec.`}</span>
+                                    }
+                                    arrow
+                                >
+                                    <div className={classes.format}>LP2</div>
+                                </Tooltip>
+                            </td><td rowSpan={2}>&nbsp;<MDLPIcon width="50px" height="12px" /></td></tr><tr><td>{`${formatTimeFromFrames(disc.left * 4, false)} of `}
+                                <Tooltip
+                                    title={
+                                        <span>{`LP4 (also part of MDLP) quadruples the available recording time. For both LP2 and LP4 however, you need an MDLP-capable unit to play such tracks.`}</span>
+                                    }
+                                    arrow
+                                >
+                                    <div className={classes.format}>LP4</div>
+                                </Tooltip>
+                            </td></tr></thead></table></span>
                         <div className={classes.spacing} />
                         <LinearProgress
                             variant="determinate"

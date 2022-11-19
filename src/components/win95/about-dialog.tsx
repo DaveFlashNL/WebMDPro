@@ -80,7 +80,7 @@ export const W95AboutDialog = (props: { visible: boolean; handleClose: () => voi
                         </li>
                     </ul>
                     <p style={{ textAlign: 'center', fontSize: 13 }}>
-                        Version #{GIT_HASH} {(GIT_DIFF as any) === '0' ? '' : `(${GIT_DIFF} diff-lines ahead)`} built on {BUILD_DATE}
+                        Version 1.3.6 <i>b</i>#{GIT_HASH} {(GIT_DIFF as any) === '0' ? '' : `(${GIT_DIFF} diff-lines ahead)`} built on {BUILD_DATE}
                     </p>
                     <DialogFooter>
                         <FooterButton onClick={props.handleClose}>OK</FooterButton>
