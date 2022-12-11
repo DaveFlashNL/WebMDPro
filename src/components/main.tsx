@@ -2,16 +2,7 @@ import React, { useEffect, useCallback, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import clsx from 'clsx';
 import { useDropzone } from 'react-dropzone';
-import {
-    DragDropContext,
-    Draggable,
-    DraggableProvided,
-    DropResult,
-    ResponderProvided,
-    Droppable,
-    DroppableProvided,
-    DroppableStateSnapshot,
-} from 'react-beautiful-dnd';
+import { DragDropContext, Draggable, DraggableProvided, DropResult, ResponderProvided, Droppable, DroppableProvided, DroppableStateSnapshot, } from 'react-beautiful-dnd';
 import { listContent, deleteTracks, moveTrack, groupTracks, deleteGroups, dragDropTrack, ejectDisc } from '../redux/actions';
 import { actions as renameDialogActions } from '../redux/rename-dialog-feature';
 import { actions as convertDialogActions } from '../redux/convert-dialog-feature';
@@ -33,7 +24,7 @@ import EditIcon from '@material-ui/icons/Edit';
 import Backdrop from '@material-ui/core/Backdrop';
 import CreateNewFolderIcon from '@material-ui/icons/CreateNewFolder';
 import EjectIcon from '@material-ui/icons/Eject';
-import ArrowDropDownCircleOutlined from '@material-ui/icons/ArrowDropDownCircleOutlined';
+import PlayCircleIcon from '@material-ui/icons/PlayCircleOutlineOutlined';
 import { ReactComponent as MDLPIcon } from '../images/MDLP.svg';
 import { ReactComponent as MDIcon } from '../images/minidisclogo.svg';
 
@@ -178,20 +169,25 @@ const useStyles = makeStyles(theme => ({
         display: 'inline-flex',
         verticalAlign: 'middle',
         textAlign: 'center',
-        "& :hover": {
-            color: "#000",
-        }
+        color: "#000",
+        cursor: 'pointer',
     },
-    MDLPbtninner:
+    MDLPHover:
         theme.palette.type === 'light'
             ? {
-                color: '#3f51b5',
-            }
-            : {
-                color: '#2196f3',
+                "& :hover": {
+                    color: '#3f51b5',
+                }
+            } : {
+                "& :hover": {
+                    color: '#2196f3',
+                }
             },
     MDLPopen: {
-        transform: 'rotate(180deg)',
+        transform: 'rotate(-90deg)',
+    },
+    MDLPclosed: {
+        transform: 'rotate(90deg)',
     },
     MDLabelName: {
         fontWeight: 'bold',
@@ -531,7 +527,7 @@ export const Main = (props: {}) => {
             return "MD60";
         } else {
             //unknown disc format, so returns the time inferred from frames as normal
-            return HHMMSSTimeFromFrames
+            return HHMMSSTimeFromFrames;
         }
     }
 
@@ -590,9 +586,9 @@ export const Main = (props: {}) => {
                                 }
                                 arrow
                             >
-                                <span className={classes.MDLPbtn} aria-label="MDLP-modes" onClick={hideMDLP}>{hiddenMDLPModes ? <ArrowDropDownCircleOutlined className={classes.MDLPbtninner} /> : <ArrowDropDownCircleOutlined className={classes.MDLPbtninner + ' ' + classes.MDLPopen} />}</span>
+                                <span className={classes.MDLPbtn + ' ' + classes.MDLPHover} aria-label="MDLP-modes" onClick={hideMDLP}>{hiddenMDLPModes ? <PlayCircleIcon className={classes.MDLPclosed} /> : <PlayCircleIcon className={classes.MDLPopen} />}</span>
                             </Tooltip>
-                        </span><span className={classes.MDLP} id="LP24" hidden={true}>
+                        </span><span id="LP24" hidden={true}>
                             <table className={classes.MDLPTable}><thead><tr><td>{`${formatTimeFromFrames(disc.left * 2, false)} of `}
                                 <Tooltip
                                     title={
@@ -602,7 +598,14 @@ export const Main = (props: {}) => {
                                 >
                                     <div className={classes.format}>LP2</div>
                                 </Tooltip>
-                            </td><td rowSpan={2}>&nbsp;<MDLPIcon width="50px" height="12px" /></td></tr><tr><td>{`${formatTimeFromFrames(disc.left * 4, false)} of `}
+                            </td><td rowSpan={2}>&nbsp;<Tooltip
+                                title={
+                                    <span>{`Minidisc "Long Play", introduced in September 2000, is a new encoding method for audio on MiniDisc's that offers two modes: one gives 160 minutes stereo ("LP2"), the second gives 320 minutes stereo ("LP4"). Only players labelled with the same mark such as this will playback tracks encoded in MDLP-modes, on other plays they plaback as silence.`}</span>
+                                }
+                                arrow
+                            >
+                                <MDLPIcon width="50px" height="12px" />
+                            </Tooltip></td></tr><tr><td>{`${formatTimeFromFrames(disc.left * 4, false)} of `}
                                 <Tooltip
                                     title={
                                         <span>{`LP4 (also part of MDLP) quadruples the available recording time. For both LP2 and LP4 however, you need an MDLP-capable unit to play such tracks.`}</span>
