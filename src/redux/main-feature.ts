@@ -36,7 +36,7 @@ export const slice = createSlice({
     },
 });
 
-export const isDesktopApp = () => {
+export const isElectron = () => {
     /* Renderer process
     if (typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer') {
         return true;
@@ -52,10 +52,10 @@ export const isDesktopApp = () => {
     return false;*/
     if (navigator.userAgent.indexOf('Electron') >= 0) {
         // Electron specific code
-        console.log(navigator.userAgent.toString());
+        //console.log(navigator.userAgent.toString());
         return true;
     } else {
-        console.log(navigator.userAgent.toString());
+        //console.log(navigator.userAgent.toString());
         return false;
     }
 };

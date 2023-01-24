@@ -3,6 +3,7 @@ import { CustomParameterInfo, CustomParameters } from '../custom-parameters';
 import { NetMDService, NetMDUSBService } from './netmd';
 // import { NetMDMockService } from './netmd-mock';
 import { NetMDRemoteService } from './remote-netmd';
+import { lproj } from '../lproj';
 
 interface ServicePrototype {
     create: (parameters?: CustomParameters) => NetMDService;
@@ -20,22 +21,22 @@ export interface ServiceConstructionInfo {
 export const Services: ServicePrototype[] = [
     {
         name: 'USB NetMD',
-        getConnectName: () => 'Connect',
+        getConnectName: () => lproj.connbtn,
         create: () => window.native?.interface ?? new NetMDUSBService({ debug: true }),
     },
     {
         name: 'Remote NetMD',
-        getConnectName: parameters => `Connect to ${parameters!.friendlyName || parameters!.serverAddress}`,
+        getConnectName: parameters => ` ${lproj.remoteconn} ${parameters!.friendlyName || parameters!.serverAddress}`,
         description: React.createElement(
             'p',
             null,
-            'Connect to a remote NetMD device with the help of ',
+            lproj.remotemsg,
             React.createElement('a', { href: 'https://github.com/asivery/remote-netmd-server' }, 'Remote NetMD')
         ),
         create: parameters => new NetMDRemoteService({ debug: true, ...parameters } as any),
         customParameters: [
             {
-                userFriendlyName: 'Server Address',
+                userFriendlyName: lproj.srvaddr,
                 varName: 'serverAddress',
                 type: 'string',
                 validator: content => {
@@ -48,7 +49,7 @@ export const Services: ServicePrototype[] = [
                 },
             },
             {
-                userFriendlyName: 'Friendly Name',
+                userFriendlyName: lproj.frname,
                 varName: 'friendlyName',
                 type: 'string',
             },

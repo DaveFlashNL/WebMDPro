@@ -1,0 +1,24 @@
+{
+    "condev": "Połączone urządzenie:",
+    "connbtn": "Połącz",
+    "cstmdev": "Dodaj urządzenie niestandardowe",
+    "cstmdhdr": "Dodaj urządzenie niestandardowe",
+    "frname": "Przyjazna nazwa",
+    "loadin": "Ładowanie…",
+    "mdlpinf": "Ta plakietka oznacza zarówno dostępną przestrzeń dla danego trybu nagrywania, jak i tryb używany dla istniejących ścieżek na płycie wymienionej poniżej.",
+    "nodisc": "Nie załadowano płyty",
+    "notitle": "Płyta bez tytułu",
+    "of": "z",
+    "pressconn": "Naciśnij, aby podłączyć urządzenie NetMD",
+    "remoteconn": "Podłącz do...",
+    "remotemsg": "Połącz się ze zdalnym urządzeniem NetMD za pomocą ",
+    "selectedtxt": "wybrano",
+    "srvaddr": "Adres serwera",
+    "supfaq": "Wsparcie i FAQ (Angielski)",
+    "timemsg": "Pozostały czas dostępny",
+    "welcometag": "Wprowadza urządzenia NetMD do sieci",
+    "welcometsx": {
+        "delete": "delete",
+        "costdev": "Add Custom Device"
+    }
+}

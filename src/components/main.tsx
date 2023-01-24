@@ -61,7 +61,8 @@ import { FactoryModeNoticeDialog } from './factory/factory-notice-dialog';
 import { FactoryModeProgressDialog } from './factory/factory-progress-dialog';
 import { SongRecognitionDialog } from './song-recognition-dialog';
 import { SongRecognitionProgressDialog } from './song-recognition-progress-dialog';
-import { isDesktopApp } from '../redux/main-feature';
+import { isElectron } from '../redux/main-feature';
+//import { initTrans } from './localize.js';
 
 const useStyles = makeStyles(theme => ({
     add: {
@@ -109,6 +110,12 @@ const useStyles = makeStyles(theme => ({
     headBox: {
         display: 'flex',
         justifyContent: 'space-between',
+    },
+    headTtl: {
+        display: 'flex',
+        "span": {
+            display: 'inline',
+        },
     },
     spacing: {
         marginTop: theme.spacing(1),
@@ -515,7 +522,7 @@ export const Main = (props: {}) => {
     const hideMDLP = () => {
         let lp24 = document.getElementById("LP24");
         lp24?.toggleAttribute("hidden");
-        setActive(!hiddenMDLPModes);
+        setActive(hiddenMDLPModes);
     }
     const convertTimeToDiscLabel = (e: number) => {
         let HHMMSSTimeFromFrames = formatTimeFromFrames(e, false)
@@ -527,6 +534,7 @@ export const Main = (props: {}) => {
             return "MD60";
         } else {
             //unknown disc format, so returns the time inferred from frames as normal
+            //<span data-langkey="condev">Connected device:</span>
             return HHMMSSTimeFromFrames;
         }
     }
@@ -534,46 +542,44 @@ export const Main = (props: {}) => {
     return (
         <React.Fragment>
             <Box className={classes.headBox}>
-                {isDesktopApp() ? (
-                    <Typography component="h1" variant="h6" className={classes.headBox}>
-                        Connected device: {deviceName || `Loading...`}
+                {isElectron() ? (
+                    <Typography component="h1" variant="h6" className={classes.headTtl}>
+                        &nbsp;{deviceName || <span data-langkey="loadin">Loading...</span>}
                     </Typography>
                 ) : (
                     <Typography component="h1" variant="h4">
                         Web Minidisc Pro
                     </Typography>
                 )}
-                <span>
-                    {isCapable(Capability.discEject) ? (
-                        <IconButton
-                            aria-label="actions"
-                            aria-controls="actions-menu"
-                            aria-haspopup="true"
-                            onClick={handleEject}
-                            disabled={!disc}
-                        >
-                            <EjectIcon />
-                        </IconButton>
-                    ) : null}
-                    <TopMenu />
-                </span>
+                {isCapable(Capability.discEject) ? (
+                    <IconButton
+                        aria-label="actions"
+                        aria-controls="actions-menu"
+                        aria-haspopup="true"
+                        onClick={handleEject}
+                        disabled={!disc}
+                    >
+                        <EjectIcon />
+                    </IconButton>
+                ) : null}
+                <TopMenu />
             </Box>
-            {isDesktopApp() ? (
-                isMac() ? (null) : (<Typography component="h1" variant="h6" className={classes.headBox}>nbsp;</Typography>)
+
+            {isElectron() ? (
+                isMac() ? (null) : (<Typography component="h1" variant="h6" className={classes.headTtl}>nbsp;</Typography>)
             ) : (
-                <Typography component="h1" variant="h6" className={classes.headBox}>
-                    Connected device: {deviceName || `Loading...`}
+                <Typography component="h1" variant="h6" className={classes.headTtl}>
+                    <span data-langkey="condev">Connected device:</span>&nbsp;{deviceName || <span data-langkey="loadin">Loading...</span>}
                 </Typography>
             )}
-
             <Typography component="h2" variant="body2">
                 {disc !== null ? (
                     <React.Fragment>
-                        <span>{`Remaining time available of `}<span className={classes.MDLabelName}>{`${convertTimeToDiscLabel(disc.total)}:`}</span></span><br />
-                        <span>{`${formatTimeFromFrames(disc.left, false)} of `}
+                        <span><span data-langkey="timemsg">Remaining time available of</span>{` `}<span className={classes.MDLabelName}>{`${convertTimeToDiscLabel(disc.total)}:`}</span></span><br />
+                        <span>{`${formatTimeFromFrames(disc.left, false)} `}<span data-langkey="of">of</span>{` `}
                             <Tooltip
                                 title={
-                                    <span>{`This badge denotes both the the available space for a given recording mode as well as the mode used for the existing tracks on the disc listed below.`}</span>
+                                    <span data-langkey="mdlpinf">This badge denotes both the the available space for a given recording mode as well as the mode used for the existing tracks on the disc listed below.</span>
                                 }
                                 arrow
                             >
@@ -582,14 +588,14 @@ export const Main = (props: {}) => {
                             &nbsp;<MDIcon className={classes.MDlogo} />&nbsp;
                             <Tooltip
                                 title={
-                                    <span>{hiddenMDLPModes ? 'Show' : 'Hide'}{` MDLP-recording time.`}</span>
+                                    <span>{hiddenMDLPModes ? 'Hide' : 'Show'}{` MDLP-recording time.`}</span>
                                 }
                                 arrow
                             >
-                                <span className={classes.MDLPbtn + ' ' + classes.MDLPHover} aria-label="MDLP-modes" onClick={hideMDLP}>{hiddenMDLPModes ? <PlayCircleIcon className={classes.MDLPclosed} /> : <PlayCircleIcon className={classes.MDLPopen} />}</span>
+                                <span className={classes.MDLPbtn + ' ' + classes.MDLPHover} aria-label="MDLP-modes" onClick={hideMDLP}>{hiddenMDLPModes ? <PlayCircleIcon className={classes.MDLPopen} /> : <PlayCircleIcon className={classes.MDLPclosed} />}</span>
                             </Tooltip>
-                        </span><span id="LP24" hidden={true}>
-                            <table className={classes.MDLPTable}><thead><tr><td>{`${formatTimeFromFrames(disc.left * 2, false)} of `}
+                        </span><span id="LP24" hidden={false}>
+                            <table className={classes.MDLPTable}><thead><tr><td>{`${formatTimeFromFrames(disc.left * 2, false)} `}<span data-langkey="of">of</span>{` `}
                                 <Tooltip
                                     title={
                                         <span>{`LP2 as part of the MDLP standard, doubles the available recording time, but uses a newer codec.`}</span>
@@ -605,7 +611,7 @@ export const Main = (props: {}) => {
                                 arrow
                             >
                                 <MDLPIcon width="50px" height="12px" />
-                            </Tooltip></td></tr><tr><td>{`${formatTimeFromFrames(disc.left * 4, false)} of `}
+                            </Tooltip></td></tr><tr><td>{`${formatTimeFromFrames(disc.left * 4, false)} `}<span data-langkey="of">of</span>{` `}
                                 <Tooltip
                                     title={
                                         <span>{`LP4 (also part of MDLP) quadruples the available recording time. For both LP2 and LP4 however, you need an MDLP-capable unit to play such tracks.`}</span>
@@ -623,7 +629,7 @@ export const Main = (props: {}) => {
                         />
                     </React.Fragment>
                 ) : (
-                    `No disc loaded`
+                    <span data-langkey="nodisc">No disc loaded</span>
                 )
                 }
             </Typography >
@@ -643,12 +649,12 @@ export const Main = (props: {}) => {
                 ) : null}
                 {selectedCount > 0 || selectedGroupsCount > 0 ? (
                     <Typography className={classes.toolbarLabel} color="inherit" variant="subtitle1">
-                        {selectedCount || selectedGroupsCount} selected
+                        {selectedCount || selectedGroupsCount} <span data-langtag="selectedtxt">selected</span>
                     </Typography>
                 ) : (
                     <Typography onDoubleClick={handleRenameDisc} component="h3" variant="h6" className={classes.toolbarLabel}>
                         {disc?.fullWidthTitle && `${disc.fullWidthTitle} / `}
-                        {disc ? disc?.title || `Untitled Disc` : ''}
+                        {disc ? disc?.title || <span data-langtag="notitle">Untitled Disc</span> : ''}
                     </Typography>
                 )}
                 {selectedCount > 0 ? (

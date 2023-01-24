@@ -17,7 +17,7 @@ import { W95App } from './win95/app';
 import { Capability } from '../services/netmd';
 import Toc from './factory/factory';
 import { GIT_HASH } from '../version-info';
-import { isDesktopApp } from '../redux/main-feature';
+import { isElectron } from '../redux/main-feature';
 
 const useStyles = (props: { showsList: boolean }) =>
     makeStyles(theme => ({
@@ -125,7 +125,7 @@ const App = () => {
 
                         <Box className={classes.controlsContainer}>{mainView === 'MAIN' ? <Controls /> : null}</Box>
                     </Paper>
-                    {isDesktopApp() ? (
+                    {isElectron() ? (
                         <Typography variant="body2" color="textSecondary" className={classes.copyrightTypography}>
                             <div><br />{'v1.3.6 ~ '}{GIT_HASH}</div>
 

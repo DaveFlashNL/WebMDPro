@@ -1,0 +1,24 @@
+{
+    "condev": "Connected device:",
+    "loadin": "Loading...",
+    "welcometag": "Brings NetMD-devices to the Web",
+    "pressconn": "Press to connect a NetMD-device",
+    "supfaq": "Support and FAQ",
+    "connbtn": "Connect",
+    "remoteconn": "Connect to",
+    "remotemsg": "Connect to a remote NetMD device with the help of ",
+    "mdlpinf": "This badge denotes both the the available space for a given recording mode as well as the mode used for the existing tracks on the disc listed below.",
+    "nodisc": "No disc loaded",
+    "timemsg": "Remaining time available of",
+    "of": "of",
+    "notitle": "Untitled Disc",
+    "selectedtxt": "selected",
+    "frname": "Friendly Name",
+    "srvaddr": "Server Address",
+    "cstmdev": "Add Custom Device",
+    "cstmdhdr": "Add Custom Device",
+    "welcometsx": {
+        "delete": "delete",
+        "costdev": "Add Custom Device"
+    }
+}

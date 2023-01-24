@@ -1,0 +1,24 @@
+{
+    "condev": "Verbundenes Gerät:",
+    "loadin": "Wird geladen...",
+    "welcometag": "Bringt NetMD-Geräte ins web",
+    "pressconn": "Drücken um ein NetMD-Gerät zu verbinden",
+    "supfaq": "Support und FAQ (Englisch)",
+    "connbtn": "Verbinden",
+    "remoteconn": "Verbinden mit",
+    "remotemsg": "Fernverbindung zu einem NetMD-Gerät über: ",
+    "mdlpinf": "Dieses Abzeichen kennzeichnet sowohl den verfügbaren Speicherplatz für einen bestimmten Aufnahmemodus als auch den Modus, der für die vorhandenen Tracks auf der unten aufgeführten Disc verwendet wird..",
+    "nodisc": "Keine Disc eingelegt",
+    "timemsg": "Verfügbare Zeit übrig von",
+    "of": "von",
+    "notitle": "Unbenannte Disc",
+    "selectedtxt": "ausgewählt",
+    "frname": "Freundlicher Name",
+    "srvaddr": "Server-adresse",
+    "cstmdev": "Gerät hinzufügen",
+    "cstmdhdr": "Benutzerdefiniertes Gerät hinzufügen",
+    "welcometsx": {
+        "delete": "delete",
+        "costdev": "Add Custom Device"
+    }
+}

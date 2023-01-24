@@ -17,6 +17,7 @@ import { batchActions } from 'redux-batched-actions';
 import { addService } from '../redux/actions';
 import { isAllValid, initializeParameters } from '../custom-parameters';
 import { renderCustomParameter } from './custom-parameters-renderer';
+import { lproj } from '../lproj';
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement<any, any> },
@@ -101,7 +102,7 @@ export const OtherDeviceDialog = (props: {}) => {
             TransitionComponent={Transition as any}
             aria-labelledby="rename-dialog-title"
         >
-            <DialogTitle id="rename-dialog-title">Add Custom Device</DialogTitle>
+            <DialogTitle id="rename-dialog-title">{lproj.cstmdhdr}</DialogTitle>
             <DialogContent>
                 <Select
                     onChange={handleServiceSelectionChanged}

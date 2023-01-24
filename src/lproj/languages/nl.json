@@ -1,0 +1,24 @@
+{
+    "condev": "Verbonden apparaat:",
+    "loadin": "Laden...",
+    "welcometag": "Brengt NetMD naar het web",
+    "pressconn": "Klik om te verbinden met een NetMD-apparaat",
+    "supfaq": "Support en FAQ (Engels)",
+    "connbtn": "Verbinden",
+    "remoteconn": "Verbinden met",
+    "remotemsg": "Verbind op afstand met een NetMD-apparaat via ",
+    "mdlpinf": "Deze badge geeft zowel de beschikbare opnameruimte op de disc als de modi voor elke gegeven track op de disc aan voor tracks die hieronder staan afgebeeld.",
+    "nodisc": "Geen disc geladen",
+    "timemsg": "Beschikbare tijd over van",
+    "of": "van",
+    "notitle": "Naamloze disc",
+    "selectedtxt": "geselecteerd",
+    "frname": "Vriendelijke naam",
+    "srvaddr": "Serveradres",
+    "cstmdev": "Voeg apparaat toe",
+    "cstmdhdr": "Voeg aangepast apparaat toe",
+    "welcometsx": {
+        "delete": "delete",
+        "costdev": "Add Custom Device"
+    }
+}

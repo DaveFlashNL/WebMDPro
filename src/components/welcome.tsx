@@ -30,7 +30,10 @@ import { IconButton } from '@material-ui/core';
 import { ChangelogDialog } from './changelog-dialog';
 import { initializeParameters } from '../custom-parameters';
 import { EncoderSetupDialog } from './encoder-setup-dialog';
-import { isDesktopApp } from '../redux/main-feature';
+import { isElectron } from '../redux/main-feature';
+import { lproj } from '../lproj';
+//uncomment below to test json retrieving
+//console.log(lproj.condev);
 
 const useStyles = makeStyles(theme => ({
     main: {
@@ -142,7 +145,7 @@ export const Welcome = (props: {}) => {
     const firstService = Services.find(n => n.customParameters);
     if (firstService) {
         options.push({
-            name: 'Add Custom Device',
+            name: lproj.cstmdev,
             switchTo: false,
             handler: () =>
                 dispatch(
@@ -175,11 +178,11 @@ export const Welcome = (props: {}) => {
             <span className={classes.standardOption}>{option.name}</span>
         );
     };
-
     return (
+
         <React.Fragment>
             <Box className={classes.headBox}>
-                {isDesktopApp() ? (
+                {isElectron() ? (
                     null
                 ) : (
                     <Typography component="h1" variant="h4">
@@ -188,11 +191,11 @@ export const Welcome = (props: {}) => {
                 )}
                 <TopMenu />
             </Box>
-            {isDesktopApp() ? (
+            {isElectron() ? (
                 null
             ) : (
                 <Typography component="h2" variant="body2">
-                    Brings NetMD-devices to the Web
+                    {lproj.welcometag}
                 </Typography>
 
             )}
@@ -200,8 +203,8 @@ export const Welcome = (props: {}) => {
                 {browserSupported ? (
                     <React.Fragment>
                         <div className={classes.connectContainer}>
-                            <Typography component="h2" variant="subtitle1" align="center" className={classes.spacing}>
-                                Press to connect a NetMD-device
+                            <Typography component="h2" variant="subtitle1" align="center" className={classes.spacing} data-langkey="pressconn">
+                                {lproj.pressconn}
                             </Typography>
 
                             <SplitButton
@@ -221,7 +224,7 @@ export const Welcome = (props: {}) => {
                                 <FormHelperText>{pairingMessage}</FormHelperText>
                             </FormControl>
                         </div>
-                        {isDesktopApp() ? (
+                        {isElectron() ? (
                             null
                         ) : (
                             <div>
@@ -231,7 +234,7 @@ export const Welcome = (props: {}) => {
                                         target="_blank"
                                         href="https://www.minidisc.wiki/guides/start"
                                     >
-                                        <span style={{ verticalAlign: 'middle' }}>Support and FAQ</span>{' '}
+                                        <span style={{ verticalAlign: 'middle' }}>{lproj.supfaq}</span>{' '}
                                         <OpenInNewIcon style={{ verticalAlign: 'middle' }} fontSize="inherit" />
                                     </Link>
                                 </Typography>
