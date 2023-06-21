@@ -32,6 +32,7 @@ import { initializeParameters } from '../custom-parameters';
 import { EncoderSetupDialog } from './encoder-setup-dialog';
 import { isElectron } from '../redux/main-feature';
 import { lproj } from '../lproj';
+const txt = lproj.welcometsx;
 //uncomment below to test json retrieving
 //console.log(lproj.condev);
 
@@ -145,7 +146,7 @@ export const Welcome = (props: {}) => {
     const firstService = Services.find(n => n.customParameters);
     if (firstService) {
         options.push({
-            name: lproj.cstmdev,
+            name: txt.cstmdev,
             switchTo: false,
             handler: () =>
                 dispatch(
@@ -162,14 +163,14 @@ export const Welcome = (props: {}) => {
     const mapToEntry = (option: OptionType) => {
         return option.id >= simpleServicesLength ? (
             <React.Fragment>
-                <IconButton aria-label="delete" className={classes.deleteButton} size="small" onClick={e => deleteCustom(e, option.id)}>
+                <IconButton aria-label={txt.delete} className={classes.deleteButton} size="small" onClick={e => deleteCustom(e, option.id)}>
                     <DeleteIcon />
                 </IconButton>
                 {option.name}
             </React.Fragment>
         ) : option.customAddIcon ? (
             <React.Fragment>
-                <IconButton aria-label="add custom device" className={classes.deleteButton} size="small">
+                <IconButton aria-label={txt.costdev} className={classes.deleteButton} size="small">
                     <AddIcon />
                 </IconButton>
                 {option.name}
@@ -195,8 +196,8 @@ export const Welcome = (props: {}) => {
                 null
             ) : (
                 <Typography component="h2" variant="body2">
-                    {lproj.welcometag}
-                </Typography>
+                    {txt.tagline}
+                </Typography>//>>Brings NetMD-devices to the Web<<
 
             )}
             <Box className={classes.main}>
@@ -204,7 +205,7 @@ export const Welcome = (props: {}) => {
                     <React.Fragment>
                         <div className={classes.connectContainer}>
                             <Typography component="h2" variant="subtitle1" align="center" className={classes.spacing} data-langkey="pressconn">
-                                {lproj.pressconn}
+                                {txt.pressconn}
                             </Typography>
 
                             <SplitButton
@@ -244,40 +245,40 @@ export const Welcome = (props: {}) => {
                 ) : (
                     <React.Fragment>
                         <Typography component="h2" variant="subtitle1" align="center" className={classes.spacing}>
-                            This Web browser is not supported.&nbsp;
+                            {txt.browser}.&nbsp;
                             <Link rel="noopener noreferrer" href="#" onClick={handleLearnWhy}>
-                                Learn Why
+                                {txt.learnwhy}
                             </Link>
-                        </Typography>
+                        </Typography>//This Web browser is not supported // learn why
 
                         <Link rel="noopener noreferrer" target="_blank" href="https://www.google.com/chrome/">
                             <img alt="Chrome Logo" src={ChromeIconPath} className={classes.chromeLogo} />
                         </Link>
 
                         <Typography component="h2" variant="subtitle1" align="center" className={classes.spacing}>
-                            Try using{' '}
+                            {txt.trychrome}{' '}
                             <Link rel="noopener noreferrer" target="_blank" href="https://www.google.com/chrome/">
                                 Chrome
                             </Link>{' '}
-                            instead
+                            {txt.instead}
                         </Typography>
 
                         {showWhyUnsupported ? (
                             <>
-                                <Typography component="p" variant="body2" className={classes.why}>
-                                    Web MiniDisc Pro requires a browser that supports both{' '}
+                                <Typography component="p" variant="body2" className={classes.why}>//Web MiniDisc Pro requires a browser that supports both
+                                    {txt.whyspprt}{' '}
                                     <Link rel="noopener noreferrer" target="_blank" href="https://wicg.github.io/webusb/">
                                         WebUSB
                                     </Link>{' '}
-                                    and{' '}
+                                    {txt.and}{' '}
                                     <Link rel="noopener noreferrer" target="_blank" href="https://webassembly.org/">
                                         WebAssembly
                                     </Link>
                                     .
                                 </Typography>
                                 <ul>
-                                    <li>WebUSB is needed to control the NetMD device via the USB connection to your computer.</li>
-                                    <li>WebAssembly is used to convert the music to a MiniDisc compatible format</li>
+                                    <li>{txt.listreasonA}</li>//WebUSB is needed to control the NetMD device via the USB connection to your computer.
+                                    <li>{txt.listreasonB}</li>//WebAssembly is used to convert the music to a MiniDisc compatible format
                                 </ul>
                             </>
                         ) : null}

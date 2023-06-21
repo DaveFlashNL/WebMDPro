@@ -1,24 +1,45 @@
 {
-    "condev": "Connected device:",
-    "loadin": "Loading...",
+    "welcometsx": {
+        "cstmdev": "Add Custom Device",
+        "delete": "delete",
+        "costdev": "Add Custom Device",
+        "tagline": "Brings NetMD-devices to the Web",
+        "pressconn": "Press to connect a NetMD-device",
+        "browser": "This Web browser is not supported",
+        "learnwhy": "Learn Why",
+        "trychrome": "Try using",
+        "instead": "instead",
+        "whyspprt": "Web MiniDisc Pro requires a browser that supports both",
+        "and": "and",
+        "listreasonA": "WebUSB is needed to control the NetMD device via the USB connection to your computer.",
+        "listreasonB": "WebAssembly is used to convert the music to a MiniDisc compatible format."
+    },
+    "maintsx": {
+        "test": "test"
+    },
+    "cstmdhdr": "Add Custom Device",
+    "condev": "Connected to: ",
+    "loadin": "loading...",
     "welcometag": "Brings NetMD-devices to the Web",
-    "pressconn": "Press to connect a NetMD-device",
     "supfaq": "Support and FAQ",
     "connbtn": "Connect",
     "remoteconn": "Connect to",
     "remotemsg": "Connect to a remote NetMD device with the help of ",
     "mdlpinf": "This badge denotes both the the available space for a given recording mode as well as the mode used for the existing tracks on the disc listed below.",
+    "mdlp": "Minidisc \"Long Play\", introduced in September 2000, is a new encoding method for audio on MiniDisc's that offers two modes: one gives 160 minutes stereo (\"LP2\"), the second gives 320 minutes stereo (\"LP4\"). Only players labelled with the same mark such as this will playback tracks encoded in MDLP-modes, on other plays they plaback as silence.",
+    "mdlp2": "LP2 iss part of the MDLP standard \"Long Play\" and doubles the available recording time, but uses a newer codec.",
+    "mdlp4": "LP4 (also part of MDLP) quadruples the available recording time. For both LP2 and LP4 however, you need an MDLP-capable unit to play such tracks.",
     "nodisc": "No disc loaded",
-    "timemsg": "Remaining time available of",
+    "timemsg": "Remaining time available on",
     "of": "of",
     "notitle": "Untitled Disc",
     "selectedtxt": "selected",
     "frname": "Friendly Name",
     "srvaddr": "Server Address",
-    "cstmdev": "Add Custom Device",
-    "cstmdhdr": "Add Custom Device",
-    "welcometsx": {
-        "delete": "delete",
-        "costdev": "Add Custom Device"
+    "copyright": {
+        "txt1": " (original), this fork by ",
+        "txt2": "me",
+        "txt3": ", proudly hosted on",
+        "txt4": " in the EU. All rights reserved. © "
     }
 }

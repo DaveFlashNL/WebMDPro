@@ -62,7 +62,8 @@ import { FactoryModeProgressDialog } from './factory/factory-progress-dialog';
 import { SongRecognitionDialog } from './song-recognition-dialog';
 import { SongRecognitionProgressDialog } from './song-recognition-progress-dialog';
 import { isElectron } from '../redux/main-feature';
-//import { initTrans } from './localize.js';
+import { lproj } from '../lproj';
+const txt = lproj.maintsx;
 
 const useStyles = makeStyles(theme => ({
     add: {
@@ -199,6 +200,16 @@ const useStyles = makeStyles(theme => ({
     MDLabelName: {
         fontWeight: 'bold',
     },
+    themeFill:
+        theme.palette.type === 'light'
+            ? {
+                color: '#000',
+                fill: '#000'
+            } : {
+                //light color
+                color: '#FFF',
+                fill: '#FFF'
+            },
 }));
 
 function getTrackStatus(track: Track, deviceStatus: DeviceStatus | null): 'playing' | 'paused' | 'none' {
@@ -522,7 +533,7 @@ export const Main = (props: {}) => {
     const hideMDLP = () => {
         let lp24 = document.getElementById("LP24");
         lp24?.toggleAttribute("hidden");
-        setActive(hiddenMDLPModes);
+        setActive(!hiddenMDLPModes);
     }
     const convertTimeToDiscLabel = (e: number) => {
         let HHMMSSTimeFromFrames = formatTimeFromFrames(e, false)
@@ -544,7 +555,7 @@ export const Main = (props: {}) => {
             <Box className={classes.headBox}>
                 {isElectron() ? (
                     <Typography component="h1" variant="h6" className={classes.headTtl}>
-                        &nbsp;{deviceName || <span data-langkey="loadin">Loading...</span>}
+                        {lproj.condev}{deviceName || lproj.loadin}
                     </Typography>
                 ) : (
                     <Typography component="h1" variant="h4">
@@ -569,58 +580,60 @@ export const Main = (props: {}) => {
                 isMac() ? (null) : (<Typography component="h1" variant="h6" className={classes.headTtl}>nbsp;</Typography>)
             ) : (
                 <Typography component="h1" variant="h6" className={classes.headTtl}>
-                    <span data-langkey="condev">Connected device:</span>&nbsp;{deviceName || <span data-langkey="loadin">Loading...</span>}
+                    {lproj.condev}{deviceName || lproj.loadin}
                 </Typography>
             )}
             <Typography component="h2" variant="body2">
                 {disc !== null ? (
                     <React.Fragment>
-                        <span><span data-langkey="timemsg">Remaining time available of</span>{` `}<span className={classes.MDLabelName}>{`${convertTimeToDiscLabel(disc.total)}:`}</span></span><br />
-                        <span>{`${formatTimeFromFrames(disc.left, false)} `}<span data-langkey="of">of</span>{` `}
+                        <span>{lproj.timemsg}{` `}<span className={classes.MDLabelName}>{`${convertTimeToDiscLabel(disc.total)}:`}</span></span><br />
+                        <span>{`${formatTimeFromFrames(disc.left, false)} `}{lproj.of}{` `}
                             <Tooltip
-                                title={
-                                    <span data-langkey="mdlpinf">This badge denotes both the the available space for a given recording mode as well as the mode used for the existing tracks on the disc listed below.</span>
+                                title={lproj.mdlpinf
+                                    //<span data-langkey="mdlpinf">This badge denotes both the the available space for a given recording mode as well as the mode used for the existing tracks on the disc listed below.</span>
                                 }
                                 arrow
                             >
                                 <div className={classes.format}>SP</div>
                             </Tooltip>
-                            &nbsp;<MDIcon className={classes.MDlogo} />&nbsp;
+                            &nbsp;<MDIcon className={classes.MDlogo + ' ' + classes.themeFill} />&nbsp;
                             <Tooltip
                                 title={
                                     <span>{hiddenMDLPModes ? 'Hide' : 'Show'}{` MDLP-recording time.`}</span>
                                 }
                                 arrow
                             >
-                                <span className={classes.MDLPbtn + ' ' + classes.MDLPHover} aria-label="MDLP-modes" onClick={hideMDLP}>{hiddenMDLPModes ? <PlayCircleIcon className={classes.MDLPopen} /> : <PlayCircleIcon className={classes.MDLPclosed} />}</span>
+                                <span className={classes.MDLPbtn + ' ' + classes.MDLPHover + ' ' + classes.themeFill} aria-label="MDLP-modes" onClick={hideMDLP}>{hiddenMDLPModes ? <PlayCircleIcon className={classes.MDLPopen} /> : <PlayCircleIcon className={classes.MDLPclosed} />}</span>
                             </Tooltip>
                         </span><span id="LP24" hidden={false}>
-                            <table className={classes.MDLPTable}><thead><tr><td>{`${formatTimeFromFrames(disc.left * 2, false)} `}<span data-langkey="of">of</span>{` `}
+                            <table className={classes.MDLPTable}><thead><tr><td>{`${formatTimeFromFrames(disc.left * 2, false)} `}{lproj.of}{` `}
                                 <Tooltip
                                     title={
-                                        <span>{`LP2 as part of the MDLP standard, doubles the available recording time, but uses a newer codec.`}</span>
+                                        <span>{lproj.mdlp2}</span>
+                                        //<span>{`LP2 iss part of the MDLP standard "Long Play" and doubles the available recording time, but uses a newer codec.`}</span>
                                     }
                                     arrow
                                 >
                                     <div className={classes.format}>LP2</div>
                                 </Tooltip>
                             </td><td rowSpan={2}>&nbsp;<Tooltip
-                                title={
-                                    <span>{`Minidisc "Long Play", introduced in September 2000, is a new encoding method for audio on MiniDisc's that offers two modes: one gives 160 minutes stereo ("LP2"), the second gives 320 minutes stereo ("LP4"). Only players labelled with the same mark such as this will playback tracks encoded in MDLP-modes, on other plays they plaback as silence.`}</span>
+                                title={<span>{lproj.mdlp}</span>
+                                    //<span>{`Minidisc "Long Play", introduced in September 2000, is a new encoding method for audio on MiniDisc's that offers two modes: one gives 160 minutes stereo ("LP2"), the second gives 320 minutes stereo ("LP4"). Only players labelled with the same mark such as this will playback tracks encoded in MDLP-modes, on other plays they plaback as silence.`}</span>
                                 }
                                 arrow
                             >
-                                <MDLPIcon width="50px" height="12px" />
-                            </Tooltip></td></tr><tr><td>{`${formatTimeFromFrames(disc.left * 4, false)} `}<span data-langkey="of">of</span>{` `}
+                                <span className={classes.themeFill}><MDLPIcon width="50px" height="12px" /></span>
+                            </Tooltip></td></tr><tr><td>{`${formatTimeFromFrames(disc.left * 4, false)} `}{lproj.of}{` `}
                                 <Tooltip
-                                    title={
-                                        <span>{`LP4 (also part of MDLP) quadruples the available recording time. For both LP2 and LP4 however, you need an MDLP-capable unit to play such tracks.`}</span>
+                                    title={<span>{lproj.mdlp4}</span>
+                                        //<span>{`LP4 (also part of MDLP) quadruples the available recording time. For both LP2 and LP4 however, you need an MDLP-capable unit to play such tracks.`}</span>
                                     }
                                     arrow
                                 >
                                     <div className={classes.format}>LP4</div>
                                 </Tooltip>
                             </td></tr></thead></table></span>
+                        {hiddenMDLPModes ? <small><sup>(hh:mm:ss)</sup></small> : <small><br /><sup>(hh:mm:ss)</sup></small>}
                         <div className={classes.spacing} />
                         <LinearProgress
                             variant="determinate"
@@ -654,8 +667,8 @@ export const Main = (props: {}) => {
                 ) : (
                     <Typography onDoubleClick={handleRenameDisc} component="h3" variant="h6" className={classes.toolbarLabel}>
                         {disc?.fullWidthTitle && `${disc.fullWidthTitle} / `}
-                        {disc ? disc?.title || <span data-langtag="notitle">Untitled Disc</span> : ''}
-                    </Typography>
+                        {disc ? disc?.title || lproj.notitle : ''}
+                    </Typography>//>Untitled Disc<
                 )}
                 {selectedCount > 0 ? (
                     <React.Fragment>

@@ -18,6 +18,8 @@ import { Capability } from '../services/netmd';
 import Toc from './factory/factory';
 import { GIT_HASH } from '../version-info';
 import { isElectron } from '../redux/main-feature';
+import { lproj } from '../lproj';
+const txt = lproj.copyright;
 
 const useStyles = (props: { showsList: boolean }) =>
     makeStyles(theme => ({
@@ -135,18 +137,18 @@ const App = () => {
                             <br />{'© '}
                             <Link rel="noopener noreferrer" target="_blank" href="https://stefano.brilli.me">
                                 Stefano Brilli
-                            </Link>{' (original), this fork by '}
+                            </Link>{txt.txt1}
                             <Link rel="noopener noreferrer" target="_blank" href="https://github.com/asivery">
                                 Asivery
                             </Link>{' \& '}
                             <Link rel="noopener noreferrer" target="_blank" href="https://github.com/DaveFlashNL">
-                                me
-                            </Link>{', proudly hosted on'}<br />
+                                {txt.txt2}
+                            </Link>{txt.txt3}<br />
                             <Link rel="noopener noreferrer" target="_blank" href="https://www.servage.net">
                                 ServageOne
-                            </Link>{' in the EU. All rights reserved. © ddMedia | '}
+                            </Link>{txt.txt4}
                             <Link rel="noopener noreferrer" target="_blank" href="https://twitter.com/DaveFlash">
-                                DaveFlash
+                                ddMedia | DaveFlash
                             </Link>{' '}
                             {new Date().getFullYear()}
                             {'.'}<br />

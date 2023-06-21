@@ -16,6 +16,7 @@ function getLocale() {
     } else if (locale.indexOf('pl')) {
         return pl
     } else {
+        //if no translation exists, defaults to english
         return en
     }
 }

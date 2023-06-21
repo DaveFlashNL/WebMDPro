@@ -1,15 +1,34 @@
 {
+    "welcometsx": {
+        "cstmdev": "Dodaj urządzenie niestandardowe",
+        "delete": "usuwać",
+        "costdev": "Dodaj niestandardowe urządzenie",
+        "tagline": "Wprowadza urządzenia NetMD do sieci",
+        "pressconn": "Naciśnij, aby podłączyć urządzenie NetMD",
+        "browser": "Ta przeglądarka nie jest obsługiwana",
+        "learnwhy": "Dowiedz się dlaczego",
+        "trychrome": "Spróbuj użyć",
+        "instead": "zamiast",
+        "whyspprt": "Web MiniDisc Pro wymaga przeglądarki, która obsługuje oba",
+        "and": "i",
+        "listreasonA": "WebUSB jest potrzebny do sterowania urządzeniem NetMD przez połączenie USB z komputerem.",
+        "listreasonB": "WebAssembly służy do konwersji muzyki do formatu kompatybilnego z MiniDisc."
+    },
+    "maintsx": {
+        "test": "test"
+    },
     "condev": "Połączone urządzenie:",
-    "connbtn": "Połącz",
-    "cstmdev": "Dodaj urządzenie niestandardowe",
     "cstmdhdr": "Dodaj urządzenie niestandardowe",
+    "connbtn": "Połącz",
     "frname": "Przyjazna nazwa",
     "loadin": "Ładowanie…",
     "mdlpinf": "Ta plakietka oznacza zarówno dostępną przestrzeń dla danego trybu nagrywania, jak i tryb używany dla istniejących ścieżek na płycie wymienionej poniżej.",
+    "mdlp": "Minidisc \"Long Play\", introduced in September 2000, is a new encoding method for audio on MiniDisc's that offers two modes: one gives 160 minutes stereo (\"LP2\"), the second gives 320 minutes stereo (\"LP4\"). Only players labelled with the same mark such as this will playback tracks encoded in MDLP-modes, on other plays they plaback as silence.",
+    "mdlp2": "LP2 iss part of the MDLP standard \"Long Play\" and doubles the available recording time, but uses a newer codec.",
+    "mdlp4": "LP4 (also part of MDLP) quadruples the available recording time. For both LP2 and LP4 however, you need an MDLP-capable unit to play such tracks.",
     "nodisc": "Nie załadowano płyty",
     "notitle": "Płyta bez tytułu",
     "of": "z",
-    "pressconn": "Naciśnij, aby podłączyć urządzenie NetMD",
     "remoteconn": "Podłącz do...",
     "remotemsg": "Połącz się ze zdalnym urządzeniem NetMD za pomocą ",
     "selectedtxt": "wybrano",
@@ -17,8 +36,10 @@
     "supfaq": "Wsparcie i FAQ (Angielski)",
     "timemsg": "Pozostały czas dostępny",
     "welcometag": "Wprowadza urządzenia NetMD do sieci",
-    "welcometsx": {
-        "delete": "delete",
-        "costdev": "Add Custom Device"
+    "copyright": {
+        "txt1": " (oryginał), ten widelec wg ",
+        "txt2": "ja",
+        "txt3": ", dumnie gościł na",
+        "txt4": " w UE. Wszelkie prawa zastrzeżone. © "
     }
 }
