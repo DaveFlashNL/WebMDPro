@@ -1,23 +1,24 @@
 import { CustomParameterInfo, CustomParameters } from '../custom-parameters';
-import { AudioExportService, FFMpegAudioExportService } from './audio-export';
-import { RemoteAtracExportService } from './remote-atrac-export';
+import { AtracdencAudioExportService } from './audio/atracdenc-export';
+import { AudioExportService } from './audio/audio-export';
+import { RemoteAtracExportService } from './audio/remote-atrac-export';
 
-interface AudioServicePrototype {
-    create: new (parameters: CustomParameters) => AudioExportService;
+interface AudioServicePrototype<T extends AudioExportService> {
+    create: new (parameters: CustomParameters) => T;
     customParameters?: CustomParameterInfo[];
     name: string;
     description?: string;
 }
 
-export const AudioServices: AudioServicePrototype[] = [
+export const AudioServices: AudioServicePrototype<AudioExportService>[] = [
     {
         name: 'Atracdenc',
-        create: FFMpegAudioExportService as any,
-        description: 'A standard open-source ATRAC encoder. It\'s ATRAC3 support is incomplete',
+        create: AtracdencAudioExportService,
+        description: 'A mediocre  open-source ATRAC encoder. It\'s ATRAC3 support is incomplete',
     },
     {
         name: 'Remote ATRAC Encoder',
-        create: RemoteAtracExportService as any,
+        create: RemoteAtracExportService,
         customParameters: [
             {
                 userFriendlyName: 'Server Address',

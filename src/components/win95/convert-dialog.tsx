@@ -1,13 +1,14 @@
 import React, { useCallback, useContext } from 'react';
 import { Button, WindowHeader, Fieldset, Select, Table, TableBody, TableDataCell, Divider, Toolbar } from 'react95';
 import { DialogOverlay, DialogWindow, DialogFooter, DialogWindowContent, WindowCloseIcon, FooterButton, CustomTableRow } from './common';
-import { TitleFormatType, UploadFormat } from '../../redux/convert-dialog-feature';
+import { TitleFormatType } from '../../redux/convert-dialog-feature';
 import { DropzoneInputProps, DropzoneRootProps } from 'react-dropzone';
 import { ThemeContext } from 'styled-components';
 import ArrowUpIconUrl from '../../images/win95/arrowup.png';
 import ArrowDownIconUrl from '../../images/win95/arrowdown.png';
 import DeleteIconUrl from '../../images/win95/delete.png';
 import RenameIconUrl from '../../images/win95/rename.png';
+import { Codec } from '../../services/interfaces/netmd';
 
 const trackTitleOptions = [
     { value: 'filename', label: 'Filename' },
@@ -26,7 +27,7 @@ const recordModeOptions = [
 
 export const W95ConvertDialog = (props: {
     visible: boolean;
-    format: UploadFormat;
+    format: Codec;
     titleFormat: TitleFormatType;
     titles: { title: string; fullWidthTitle: string }[];
     loadingMetadata: boolean;
@@ -156,8 +157,9 @@ export const W95ConvertDialog = (props: {
                     ) : null}
 
                     <DialogFooter>
-                        <Button disabled={props.loadingMetadata} onClick={props.handleToggleTracksOrder}>{`${props.tracksOrderVisible ? 'Hide' : 'Show'
-                            } Tracks`}</Button>
+                        <Button disabled={props.loadingMetadata} onClick={props.handleToggleTracksOrder}>{`${
+                            props.tracksOrderVisible ? 'Hide' : 'Show'
+                        } Tracks`}</Button>
                         <div style={{ flex: '1 1 auto' }}></div>
                         <FooterButton disabled={props.loadingMetadata || props.availableSeconds < 0} onClick={props.handleConvert}>
                             OK

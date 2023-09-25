@@ -8,11 +8,11 @@ import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import Slide from '@material-ui/core/Slide';
+import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 import { TransitionProps } from '@material-ui/core/transitions';
 import { actions as factoryEditOtherValuesDialogActions } from '../../redux/factory/factory-edit-other-values-dialog-feature';
 import { actions as factoryActions } from '../../redux/factory/factory-feature';
-import { TextField } from '@material-ui/core';
 import { ToC } from 'netmd-tocmanip';
 import { batchActions } from 'redux-batched-actions';
 

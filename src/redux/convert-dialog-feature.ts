@@ -1,20 +1,30 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { HiMDCodecName } from 'himd-js';
 import { enableBatching } from 'redux-batched-actions';
+import { Codec } from '../services/interfaces/netmd';
 import { savePreference, loadPreference } from '../utils';
 
 export type TitleFormatType = 'filename' | 'title' | 'album-title' | 'artist-title' | 'artist-album-title' | 'title-artist';
-export type UploadFormat = 'SP' | 'LP2' | 'LP4';
+export type ForcedEncodingFormat = { codec: 'SPM' | 'SPS' | 'LP2' | 'LP4' | HiMDCodecName; bitrate?: number } | null;
 
 export interface ConvertDialogFeature {
     visible: boolean;
-    format: UploadFormat;
+    format: { [mdSpecName: string]: Codec };
     titleFormat: TitleFormatType;
-    titles: { title: string; fullWidthTitle: string; duration: number; forcedEncoding: 'LP2' | 'LP4' | null; bytesToSkip: number }[];
+    titles: {
+        title: string;
+        fullWidthTitle: string;
+        duration: number;
+        forcedEncoding: ForcedEncodingFormat;
+        bytesToSkip: number;
+        artist?: string;
+        album?: string;
+    }[];
 }
 
 const initialState: ConvertDialogFeature = {
     visible: false,
-    format: loadPreference('uploadFormat', 'LP2') as UploadFormat,
+    format: loadPreference('uploadFormat', {}), //FIXME add defaults again
     titleFormat: loadPreference('trackTitleFormat', 'filename') as TitleFormatType,
     titles: [],
 };
@@ -26,7 +36,7 @@ const slice = createSlice({
         setVisible: (state, action: PayloadAction<boolean>) => {
             state.visible = action.payload;
         },
-        setFormat: (state, action: PayloadAction<UploadFormat>) => {
+        setFormat: (state, action: PayloadAction<ConvertDialogFeature['format']>) => {
             state.format = action.payload;
             savePreference('uploadFormat', state.format);
         },
@@ -37,10 +47,26 @@ const slice = createSlice({
         setTitles: (
             state,
             action: PayloadAction<
-                { title: string; fullWidthTitle: string; duration: number; forcedEncoding: 'LP2' | 'LP4' | null; bytesToSkip: number }[]
+                {
+                    title: string;
+                    fullWidthTitle: string;
+                    duration: number;
+                    forcedEncoding: ForcedEncodingFormat;
+                    bytesToSkip: number;
+                    artist?: string;
+                    album?: string;
+                }[]
             >
         ) => {
             state.titles = action.payload;
+        },
+        updateFormatForSpec: (state, action: PayloadAction<{ spec: string; codec: Codec; unlessUnset?: boolean }>) => {
+            if (action.payload.unlessUnset && state.format[action.payload.spec] !== undefined) return;
+            state.format = {
+                ...state.format,
+                [action.payload.spec]: action.payload.codec,
+            };
+            savePreference('uploadFormat', state.format);
         },
     },
 });

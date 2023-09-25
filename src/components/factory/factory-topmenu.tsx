@@ -5,7 +5,7 @@ import IconButton from '@material-ui/core/IconButton';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import Divider from '@material-ui/core/Divider';
-import MoreVertIcon from '@material-ui/icons/MoreVert';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 import {
     downloadRam,
@@ -17,6 +17,8 @@ import {
     stripSCMS,
     archiveDisc,
     toggleSPUploadSpeedup,
+    stripTrProtect,
+    enterHiMDUnrestrictedMode,
 } from '../../redux/factory/factory-actions';
 import { actions as appActions } from '../../redux/app-feature';
 import { actions as factoryEditOtherValuesDialogActions } from '../../redux/factory/factory-edit-other-values-dialog-feature';
@@ -24,24 +26,27 @@ import { useShallowEqualSelector } from '../../utils';
 import Link from '@material-ui/core/Link';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
+import Tooltip from '@material-ui/core/Tooltip';
 import { makeStyles } from '@material-ui/core/styles';
 
-import RefreshIcon from '@material-ui/icons/Refresh';
-import GitHubIcon from '@material-ui/icons/GitHub';
-import ExitToAppIcon from '@material-ui/icons/ExitToApp';
-import InfoIcon from '@material-ui/icons/Info';
-import ToggleOffIcon from '@material-ui/icons/ToggleOff';
-import ToggleOnIcon from '@material-ui/icons/ToggleOn';
-import HelpIcon from '@material-ui/icons/Help';
-import MemoryIcon from '@material-ui/icons/Memory';
-import CodeIcon from '@material-ui/icons/Code';
-import GetAppIcon from '@material-ui/icons/GetApp';
-import PublishIcon from '@material-ui/icons/Publish';
-import GamesIcon from '@material-ui/icons/Games';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import ToggleOffIcon from '@mui/icons-material/ToggleOff';
+import ToggleOnIcon from '@mui/icons-material/ToggleOn';
+import HelpIcon from '@mui/icons-material/Help';
+import MemoryIcon from '@mui/icons-material/Memory';
+import CodeIcon from '@mui/icons-material/Code';
+import GetAppIcon from '@mui/icons-material/GetApp';
+import PublishIcon from '@mui/icons-material/Publish';
+import GamesIcon from '@mui/icons-material/Games';
+import SecurityIcon from '@mui/icons-material/Security';
+import NoEncryptionIcon from '@mui/icons-material/NoEncryption';
+import ArchiveIcon from '@mui/icons-material/Archive';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+import SettingsIcon from '@mui/icons-material/Settings';
 
-import { ExploitCapability } from '../../services/netmd';
-import { Archive, LockOpen } from '@material-ui/icons';
-import { Tooltip } from '@material-ui/core';
+import { Capability, ExploitCapability } from '../../services/interfaces/netmd';
 
 const useStyles = makeStyles(theme => ({
     listItemIcon: {
@@ -57,8 +62,8 @@ export const FactoryTopMenu = function (props: { onClick?: () => void }) {
     const classes = useStyles();
     const dispatch = useDispatch();
 
-    let { darkMode } = useShallowEqualSelector(state => state.appState);
     const { exploitCapabilities, spUploadSpeedupActive } = useShallowEqualSelector(state => state.factory);
+    const { deviceCapabilities } = useShallowEqualSelector(state => state.main);
 
     const githubLinkRef = React.useRef<null | HTMLAnchorElement>(null);
     const helpLinkRef = React.useRef<null | HTMLAnchorElement>(null);
@@ -82,10 +87,6 @@ export const FactoryTopMenu = function (props: { onClick?: () => void }) {
         [setSubmenuAnchorEl]
     );
 
-    const handleDarkMode = useCallback(() => {
-        dispatch(appActions.setDarkMode(!darkMode));
-    }, [dispatch, darkMode]);
-
     const handleMenuClose = useCallback(() => {
         setMenuAnchorEl(null);
     }, [setMenuAnchorEl]);
@@ -95,18 +96,13 @@ export const FactoryTopMenu = function (props: { onClick?: () => void }) {
         handleMenuClose();
     }, [setSubmenuAnchorEl, handleMenuClose]);
 
+    const handleShowSettings = useCallback(() => {
+        dispatch(appActions.showSettingsDialog(true));
+        handleMenuClose();
+    }, [dispatch, handleMenuClose]);
+
     const handleExit = useCallback(() => {
         dispatch(appActions.setMainView('MAIN'));
-        handleMenuClose();
-    }, [dispatch, handleMenuClose]);
-
-    const handleShowAbout = useCallback(() => {
-        dispatch(appActions.showAboutDialog(true));
-        handleMenuClose();
-    }, [dispatch, handleMenuClose]);
-
-    const handleShowChangelog = useCallback(() => {
-        dispatch(appActions.showChangelogDialog(true));
         handleMenuClose();
     }, [dispatch, handleMenuClose]);
 
@@ -188,6 +184,16 @@ export const FactoryTopMenu = function (props: { onClick?: () => void }) {
         handleSubmenuClose();
     }, [dispatch, handleSubmenuClose]);
 
+    const handleAllUnprotect = useCallback(() => {
+        dispatch(stripTrProtect());
+        handleSubmenuClose();
+    }, [dispatch, handleSubmenuClose]);
+
+    const handleEnterHiMDUnrestrictedMode = useCallback(() => {
+        dispatch(enterHiMDUnrestrictedMode());
+        handleSubmenuClose();
+    }, [dispatch, handleSubmenuClose]);
+
     const handleToggleSPUploadSpeedup = useCallback(() => {
         dispatch(toggleSPUploadSpeedup());
         handleMenuClose();
@@ -218,9 +224,26 @@ export const FactoryTopMenu = function (props: { onClick?: () => void }) {
             <ListItemText>Toolbox</ListItemText>
         </MenuItem>
     );
+    menuItems.push(<Divider key="feature-divider-himd" />);
+
+    if (!window.native?.himdFullInterface) {
+        menuItems.push(
+            <MenuItem
+                key="himdFullMode"
+                onClick={handleEnterHiMDUnrestrictedMode}
+                disabled={!exploitCapabilities.includes(ExploitCapability.himdFullMode)}
+            >
+                <ListItemIcon className={classes.listItemIcon}>
+                    <NoEncryptionIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Switch to HiMD unrestricted mode</ListItemText>
+            </MenuItem>
+        );
+    }
+
     menuItems.push(<Divider key="feature-divider-1" />);
     menuItems.push(
-        <MenuItem key="readRAM" onClick={handleReadRAM}>
+        <MenuItem key="readRAM" onClick={handleReadRAM} disabled={!exploitCapabilities.includes(ExploitCapability.readRam)}>
             <ListItemIcon className={classes.listItemIcon}>
                 <MemoryIcon fontSize="small" />
             </ListItemIcon>
@@ -228,7 +251,7 @@ export const FactoryTopMenu = function (props: { onClick?: () => void }) {
         </MenuItem>
     );
     menuItems.push(
-        <MenuItem key="readROM" onClick={handleReadFirmware}>
+        <MenuItem key="readROM" onClick={handleReadFirmware} disabled={!exploitCapabilities.includes(ExploitCapability.readFirmware)}>
             <ListItemIcon className={classes.listItemIcon}>
                 <CodeIcon fontSize="small" />
             </ListItemIcon>
@@ -280,40 +303,22 @@ export const FactoryTopMenu = function (props: { onClick?: () => void }) {
     );
     menuItems.push(<Divider key="feature-divider-4" />);
     menuItems.push(
+        <MenuItem key="settings" onClick={handleShowSettings}>
+            <ListItemIcon className={classes.listItemIcon}>
+                <SettingsIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Settings</ListItemText>
+        </MenuItem>
+    );
+    menuItems.push(
         <MenuItem key="exit" onClick={handleExit}>
             <ListItemIcon className={classes.listItemIcon}>
                 <ExitToAppIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Exit</ListItemText>
+            <ListItemText>Exit homebrew mode</ListItemText>
         </MenuItem>
     );
     menuItems.push(<Divider key="action-divider" />);
-    menuItems.push(
-        <MenuItem key="darkMode" onClick={handleDarkMode}>
-            <ListItemIcon className={classes.listItemIcon}>
-                {/* <Switch name="darkModeSwitch" inputProps={{ 'aria-label': 'Dark Mode switch' }} size="small" /> */}
-                {darkMode ? <ToggleOnIcon fontSize="small" /> : <ToggleOffIcon fontSize="small" />}
-            </ListItemIcon>
-            <ListItemText>Dark Mode</ListItemText>
-        </MenuItem>
-    );
-
-    menuItems.push(
-        <MenuItem key="about" onClick={handleShowAbout}>
-            <ListItemIcon className={classes.listItemIcon}>
-                <InfoIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>About</ListItemText>
-        </MenuItem>
-    );
-    menuItems.push(
-        <MenuItem key="changelog" onClick={handleShowChangelog}>
-            <ListItemIcon className={classes.listItemIcon}>
-                <InfoIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Changelog</ListItemText>
-        </MenuItem>
-    );
     menuItems.push(
         <MenuItem key="support" onClick={handleHelpLink}>
             <ListItemIcon className={classes.listItemIcon}>
@@ -322,7 +327,7 @@ export const FactoryTopMenu = function (props: { onClick?: () => void }) {
             <ListItemText>
                 <Link
                     rel="noopener noreferrer"
-                    href="https://www.minidisc.wiki/guides/start"
+                    href="https://minidisc.wiki/guides/webminidisc"
                     target="_blank"
                     ref={helpLinkRef}
                     onClick={handleHelpLink}
@@ -340,7 +345,7 @@ export const FactoryTopMenu = function (props: { onClick?: () => void }) {
             <ListItemText>
                 <Link
                     rel="noopener noreferrer"
-                    href="https://github.com/DaveFlashNL/WebMDPro"
+                    href="https://github.com/asivery/webminidisc"
                     target="_blank"
                     ref={githubLinkRef}
                     onClick={handleGithubLink}
@@ -355,15 +360,29 @@ export const FactoryTopMenu = function (props: { onClick?: () => void }) {
     submenuItems.push(
         <MenuItem key="kill-scms" onClick={handleStripSCMS}>
             <ListItemIcon className={classes.listItemIcon}>
-                <LockOpen fontSize="small" />
+                <LockOpenIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText>Strip SCMS Information</ListItemText>
         </MenuItem>
     );
     submenuItems.push(
-        <MenuItem key="archive-disc" onClick={handleArchiveDisc}>
+        <MenuItem key="kill-trprotect" onClick={handleAllUnprotect}>
             <ListItemIcon className={classes.listItemIcon}>
-                <Archive fontSize="small" />
+                <SecurityIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Un-Protect all tracks</ListItemText>
+        </MenuItem>
+    );
+    submenuItems.push(
+        <MenuItem
+            key="archive-disc"
+            onClick={handleArchiveDisc}
+            disabled={
+                !(exploitCapabilities.includes(ExploitCapability.readFirmware) || deviceCapabilities.includes(Capability.trackDownload))
+            }
+        >
+            <ListItemIcon className={classes.listItemIcon}>
+                <ArchiveIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText>Archive Disc</ListItemText>
         </MenuItem>

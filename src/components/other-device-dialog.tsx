@@ -10,14 +10,15 @@ import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import Slide from '@material-ui/core/Slide';
 import Button from '@material-ui/core/Button';
+import MenuItem from '@material-ui/core/MenuItem';
+import Select from '@material-ui/core/Select';
 import { TransitionProps } from '@material-ui/core/transitions';
-import { MenuItem, Select } from '@material-ui/core';
-import { Services } from '../services/service-manager';
+import { Services } from '../services/interface-service-manager';
 import { batchActions } from 'redux-batched-actions';
 import { addService } from '../redux/actions';
 import { isAllValid, initializeParameters } from '../custom-parameters';
 import { renderCustomParameter } from './custom-parameters-renderer';
-import { lproj } from '../lproj';
+import { lproj } from '../languages';
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement<any, any> },
@@ -92,7 +93,7 @@ export const OtherDeviceDialog = (props: {}) => {
         otherDeviceDialogCustomParameters,
         currentService.customParameters,
     ]);
-
+    //localization for txt 'Add Custom Device', 'Cancel' & 'Add'.
     return (
         <Dialog
             open={otherDeviceDialogVisible}
@@ -102,6 +103,7 @@ export const OtherDeviceDialog = (props: {}) => {
             TransitionComponent={Transition as any}
             aria-labelledby="rename-dialog-title"
         >
+
             <DialogTitle id="rename-dialog-title">{lproj.cstmdhdr}</DialogTitle>
             <DialogContent>
                 <Select

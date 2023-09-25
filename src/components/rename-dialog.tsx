@@ -1,9 +1,18 @@
 import React, { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { useShallowEqualSelector } from '../utils';
-import { actions as renameDialogActions } from '../redux/rename-dialog-feature';
+import { actions as renameDialogActions, RenameType } from '../redux/rename-dialog-feature';
 import { actions as appActions } from '../redux/app-feature';
-import { renameTrack, renameDisc, renameGroup, renameInConvertDialog } from '../redux/actions';
+import {
+    renameTrack,
+    renameDisc,
+    renameGroup,
+    renameInConvertDialog,
+    himdRenameTrack,
+    renameInConvertDialogHiMD,
+    renameInSongRecognitionDialog,
+} from '../redux/actions';
+import serviceRegistry from '../services/registry';
 
 import { makeStyles } from '@material-ui/core/styles';
 import Dialog from '@material-ui/core/Dialog';
@@ -13,11 +22,12 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import TextField from '@material-ui/core/TextField';
 import Slide from '@material-ui/core/Slide';
 import Button from '@material-ui/core/Button';
+import Link from '@material-ui/core/Link';
+import Typography from '@material-ui/core/Typography';
 import { TransitionProps } from '@material-ui/core/transitions';
 import { W95RenameDialog } from './win95/rename-dialog';
-import { Link, Typography } from '@material-ui/core';
 import { batchActions } from 'redux-batched-actions';
-import { sanitizeFullWidthTitle } from 'netmd-js/dist/utils';
+import { Capability } from '../services/interfaces/netmd';
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement<any, any> },
@@ -33,68 +43,109 @@ const useStyles = makeStyles(theme => ({
     },
 }));
 
+const nameMap: { [key in RenameType]: string } = {
+    [RenameType.DISC]: 'Disc',
+    [RenameType.GROUP]: 'Group',
+    [RenameType.HIMD]: 'Track',
+    [RenameType.HIMD_DISC]: 'Disc',
+    [RenameType.TRACK]: 'Track',
+    [RenameType.TRACK_CONVERT_DIALOG]: 'Track',
+    [RenameType.TRACK_CONVERT_DIALOG_HIMD]: 'Track',
+    [RenameType.SONG_RECOGNITION_TITLE]: 'Track',
+};
+
 export const RenameDialog = (props: {}) => {
     let dispatch = useDispatch();
     let classes = useStyles();
 
-    let renameDialogVisible = useShallowEqualSelector(state => state.renameDialog.visible);
-    let renameDialogTitle = useShallowEqualSelector(state => state.renameDialog.title);
-    let renameDialogFullWidthTitle = useShallowEqualSelector(state => state.renameDialog.fullWidthTitle);
-    let renameDialogIndex = useShallowEqualSelector(state => state.renameDialog.index);
-    let renameDialogGroupIndex = useShallowEqualSelector(state => state.renameDialog.groupIndex);
-    let renameDialogIsOfConvert = useShallowEqualSelector(state => state.renameDialog.ofConvert);
+    const { fullWidthTitle, himdAlbum, himdArtist, himdTitle, index, renameType, title, visible } = useShallowEqualSelector(
+        state => state.renameDialog
+    );
+    const { deviceCapabilities } = useShallowEqualSelector(state => state.main);
+
     let allowFullWidth = useShallowEqualSelector(state => state.appState.fullWidthSupport);
 
-    const what = renameDialogGroupIndex !== null ? `Group` : renameDialogIndex < 0 ? `Disc` : `Track`;
+    const what = nameMap[renameType];
 
     const handleCancelRename = useCallback(() => {
         dispatch(renameDialogActions.setVisible(false));
     }, [dispatch]);
 
     const handleDoRename = useCallback(() => {
-        if (renameDialogIsOfConvert) {
-            dispatch(
-                renameInConvertDialog({
-                    index: renameDialogIndex,
-                    newName: renameDialogTitle,
-                    newFullWidthName: renameDialogFullWidthTitle,
-                })
-            );
-        } else if (renameDialogGroupIndex !== null) {
-            // Just rename the group with this range
-            dispatch(
-                renameGroup({
-                    newName: renameDialogTitle,
-                    newFullWidthName: renameDialogFullWidthTitle,
-                    groupIndex: renameDialogGroupIndex,
-                })
-            );
-        } else if (renameDialogIndex < 0) {
-            dispatch(
-                renameDisc({
-                    newName: renameDialogTitle,
-                    newFullWidthName: renameDialogFullWidthTitle,
-                })
-            );
-        } else {
-            dispatch(
-                renameTrack({
-                    index: renameDialogIndex,
-                    newName: renameDialogTitle,
-                    newFullWidthName: renameDialogFullWidthTitle,
-                })
-            );
+        switch (renameType) {
+            case RenameType.DISC:
+                dispatch(
+                    renameDisc({
+                        newName: title,
+                        newFullWidthName: fullWidthTitle,
+                    })
+                );
+                break;
+            case RenameType.TRACK:
+                dispatch(
+                    renameTrack({
+                        index,
+                        newName: title,
+                        newFullWidthName: fullWidthTitle,
+                    })
+                );
+                break;
+            case RenameType.GROUP:
+                dispatch(
+                    renameGroup({
+                        groupIndex: index,
+                        newName: title,
+                        newFullWidthName: fullWidthTitle,
+                    })
+                );
+                break;
+            case RenameType.HIMD:
+                dispatch(
+                    himdRenameTrack({
+                        index,
+                        title: himdTitle,
+                        artist: himdArtist,
+                        album: himdAlbum,
+                    })
+                );
+                break;
+            case RenameType.HIMD_DISC:
+                // Hmm...
+                alert('WIP');
+                break;
+            case RenameType.TRACK_CONVERT_DIALOG:
+                dispatch(
+                    renameInConvertDialog({
+                        index,
+                        newName: title,
+                        newFullWidthName: fullWidthTitle,
+                    })
+                );
+                break;
+            case RenameType.TRACK_CONVERT_DIALOG_HIMD:
+                dispatch(
+                    renameInConvertDialogHiMD({
+                        index,
+                        title: himdTitle,
+                        artist: himdArtist,
+                        album: himdAlbum,
+                    })
+                );
+                break;
+            case RenameType.SONG_RECOGNITION_TITLE:
+                dispatch(
+                    renameInSongRecognitionDialog({
+                        index,
+                        newName: title,
+                        newFullWidthName: fullWidthTitle,
+                    })
+                );
+                break;
         }
         handleCancelRename(); // Close the dialog
-    }, [
-        dispatch,
-        handleCancelRename,
-        renameDialogFullWidthTitle,
-        renameDialogGroupIndex,
-        renameDialogIndex,
-        renameDialogTitle,
-        renameDialogIsOfConvert,
-    ]);
+    }, [dispatch, handleCancelRename, renameType, title, fullWidthTitle, index, himdTitle, himdArtist, himdAlbum]);
+
+    const minidiscSpec = serviceRegistry.netmdSpec!;
 
     const handleChange = useCallback(
         (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
@@ -105,9 +156,11 @@ export const RenameDialog = (props: {}) => {
 
     const handleFullWidthChange = useCallback(
         (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-            dispatch(renameDialogActions.setCurrentFullWidthName(sanitizeFullWidthTitle(event.target.value.substring(0, 105))));
+            dispatch(
+                renameDialogActions.setCurrentFullWidthName(minidiscSpec.sanitizeFullWidthTitle(event.target.value.substring(0, 105)))
+            );
         },
-        [dispatch]
+        [dispatch, minidiscSpec]
     );
 
     const handleEnterKeyEvent = useCallback(
@@ -126,20 +179,41 @@ export const RenameDialog = (props: {}) => {
             dispatch(
                 batchActions([
                     appActions.setFullWidthSupport(true),
-                    renameDialogActions.setCurrentFullWidthName(sanitizeFullWidthTitle(renameDialogTitle)),
+                    renameDialogActions.setCurrentFullWidthName(minidiscSpec.sanitizeFullWidthTitle(title)),
                     renameDialogActions.setCurrentName(''),
                 ])
             );
         },
-        [renameDialogTitle, dispatch]
+        [title, dispatch, minidiscSpec]
     );
+
+    // HIMD:
+    const handleHiMDTitleChange = useCallback(
+        (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+            dispatch(renameDialogActions.setHimdTitle(event.target.value));
+        },
+        [dispatch]
+    );
+    const handleHiMDAlbumChange = useCallback(
+        (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+            dispatch(renameDialogActions.setHimdAlbum(event.target.value));
+        },
+        [dispatch]
+    );
+    const handleHiMDArtistChange = useCallback(
+        (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+            dispatch(renameDialogActions.setHimdArtist(event.target.value));
+        },
+        [dispatch]
+    );
+    // /HIMD
 
     const { vintageMode } = useShallowEqualSelector(state => state.appState);
     if (vintageMode) {
         const p = {
-            renameDialogVisible,
-            renameDialogTitle,
-            renameDialogIndex,
+            renameDialogVisible: visible,
+            renameDialogTitle: title,
+            renameDialogIndex: index,
             what,
             handleCancelRename,
             handleDoRename,
@@ -150,7 +224,7 @@ export const RenameDialog = (props: {}) => {
 
     return (
         <Dialog
-            open={renameDialogVisible}
+            open={visible}
             onClose={handleCancelRename}
             maxWidth={'sm'}
             fullWidth={true}
@@ -160,7 +234,8 @@ export const RenameDialog = (props: {}) => {
             <DialogTitle id="rename-dialog-title">Rename {what}</DialogTitle>
             <DialogContent>
                 {!allowFullWidth &&
-                    renameDialogTitle
+                    deviceCapabilities.includes(Capability.fullWidthSupport) &&
+                    title
                         .split('')
                         .map(n => n.charCodeAt(0))
                         .filter(
@@ -177,27 +252,64 @@ export const RenameDialog = (props: {}) => {
                         ?
                     </Typography>
                 ) : null}
-                <TextField
-                    autoFocus
-                    id="name"
-                    label={`${what} Name`}
-                    type="text"
-                    fullWidth
-                    value={renameDialogTitle}
-                    onKeyDown={handleEnterKeyEvent}
-                    onChange={handleChange}
-                />
-                {allowFullWidth && (
-                    <TextField
-                        id="fullWidthTitle"
-                        label={`Full-Width ${what} Name`}
-                        type="text"
-                        fullWidth
-                        className={classes.marginUpDown}
-                        value={renameDialogFullWidthTitle}
-                        onKeyDown={handleEnterKeyEvent}
-                        onChange={handleFullWidthChange}
-                    />
+                {renameType === RenameType.HIMD || renameType === RenameType.TRACK_CONVERT_DIALOG_HIMD ? (
+                    <>
+                        <TextField
+                            autoFocus
+                            id="himdName"
+                            label={`Title`}
+                            type="text"
+                            fullWidth
+                            value={himdTitle}
+                            onKeyDown={handleEnterKeyEvent}
+                            onChange={handleHiMDTitleChange}
+                        />
+                        <TextField
+                            autoFocus
+                            id="himdAlbum"
+                            label={`Album`}
+                            type="text"
+                            fullWidth
+                            value={himdAlbum}
+                            onKeyDown={handleEnterKeyEvent}
+                            onChange={handleHiMDAlbumChange}
+                        />
+                        <TextField
+                            autoFocus
+                            id="himdArtist"
+                            label={`Artist`}
+                            type="text"
+                            fullWidth
+                            value={himdArtist}
+                            onKeyDown={handleEnterKeyEvent}
+                            onChange={handleHiMDArtistChange}
+                        />
+                    </>
+                ) : (
+                    <>
+                        <TextField
+                            autoFocus
+                            id="name"
+                            label={`${what} Name`}
+                            type="text"
+                            fullWidth
+                            value={title}
+                            onKeyDown={handleEnterKeyEvent}
+                            onChange={handleChange}
+                        />
+                        {allowFullWidth && deviceCapabilities.includes(Capability.fullWidthSupport) && (
+                            <TextField
+                                id="fullWidthTitle"
+                                label={`Full-Width ${what} Name`}
+                                type="text"
+                                fullWidth
+                                className={classes.marginUpDown}
+                                value={fullWidthTitle}
+                                onKeyDown={handleEnterKeyEvent}
+                                onChange={handleFullWidthChange}
+                            />
+                        )}
+                    </>
                 )}
             </DialogContent>
             <DialogActions>

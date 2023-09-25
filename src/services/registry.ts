@@ -1,10 +1,11 @@
-import { NetMDFactoryService, NetMDService } from './netmd';
-import { AudioExportService } from './audio-export';
-import { MediaRecorderService } from './mediarecorder';
-import { MediaSessionService } from './media-session';
+import { MinidiscSpec, NetMDFactoryService, NetMDService } from './interfaces/netmd';
+import { AudioExportService } from './audio/audio-export';
+import { MediaRecorderService } from './browserintegration/mediarecorder';
+import { MediaSessionService } from './browserintegration/media-session';
 
 interface ServiceRegistry {
     netmdService?: NetMDService;
+    netmdSpec?: MinidiscSpec;
     netmdFactoryService?: NetMDFactoryService;
     audioExportService?: AudioExportService;
     mediaRecorderService?: MediaRecorderService;

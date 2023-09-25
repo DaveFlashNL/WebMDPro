@@ -8,6 +8,8 @@ export interface FactoryModeEditDialogState {
     totalProgress: number;
     currentProgress: number;
     additionalInfo: string;
+    canBeCancelled: boolean;
+    cancelled: boolean;
 }
 
 const initialState: FactoryModeEditDialogState = {
@@ -17,6 +19,8 @@ const initialState: FactoryModeEditDialogState = {
     totalProgress: 0,
     currentProgress: 0,
     additionalInfo: '',
+    canBeCancelled: false,
+    cancelled: false,
 };
 
 export const slice = createSlice({
@@ -25,6 +29,7 @@ export const slice = createSlice({
     reducers: {
         setVisible: (state: FactoryModeEditDialogState, action: PayloadAction<boolean>) => {
             state.visible = action.payload;
+            state.cancelled = false; // Reset the state
         },
         setDetails: (state: FactoryModeEditDialogState, action: PayloadAction<{ name: string; units: string }>) => {
             state.actionName = action.payload.name;
@@ -38,6 +43,12 @@ export const slice = createSlice({
             state.currentProgress = action.payload.current;
             state.totalProgress = action.payload.total;
             if (action.payload.additionalInfo !== undefined) state.additionalInfo = action.payload.additionalInfo;
+        },
+        setCancelled: (state: FactoryModeEditDialogState, action: PayloadAction<boolean>) => {
+            state.cancelled = action.payload;
+        },
+        setCanBeCancelled: (state: FactoryModeEditDialogState, action: PayloadAction<boolean>) => {
+            state.canBeCancelled = action.payload;
         },
     },
 });

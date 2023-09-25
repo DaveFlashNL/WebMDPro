@@ -1,5 +1,5 @@
 /* eslint no-restricted-globals: 0 */
-import { getPublicPathFor } from '../utils';
+import { getPublicPathFor } from '../../utils';
 export class AtracdencProcess {
     private messageCallback?: (ev: MessageEvent) => void;
 
@@ -19,7 +19,7 @@ export class AtracdencProcess {
             this.messageCallback = resolve;
             this.worker.postMessage({ action: 'encode', bitrate, data }, [data]);
         });
-        return eventData.data.result as Uint8Array;
+        return eventData.data.result as ArrayBuffer;
     }
 
     terminate() {

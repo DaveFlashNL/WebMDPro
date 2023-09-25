@@ -1,9 +1,25 @@
-import { Disc, formatTimeFromFrames, Encoding, Group, Track } from 'netmd-js';
 import { useSelector, shallowEqual } from 'react-redux';
-import { RootState } from './redux/store';
+import { AppDispatch, RootState } from './redux/store';
 import { Mutex } from 'async-mutex';
 import { Theme } from '@material-ui/core';
 import * as mm from 'music-metadata-browser';
+import { Disc, Group, Track } from './services/interfaces/netmd';
+import { useEffect, useState } from 'react';
+import { createWorker } from '@ffmpeg/ffmpeg';
+import { ForcedEncodingFormat } from './redux/convert-dialog-feature';
+import { HiMDKBPSToFrameSize } from 'himd-js';
+
+export type Promised<R> = R extends Promise<infer Q> ? Q : never;
+
+export const acceptedTypes = [
+    `audio/*`,
+    `video/mp4`,
+    `video/webm`,
+    'video/x-matroska',
+    `.oma`,
+    `.at3`,
+    `.aea`
+]
 
 export function sleep(ms: number) {
     return new Promise(resolve => {
@@ -34,20 +50,62 @@ export type TitledFile = {
     file: File;
     title: string;
     fullWidthTitle: string;
-    forcedEncoding: 'LP2' | 'LP4' | null;
+    forcedEncoding: ForcedEncodingFormat;
     bytesToSkip: number;
+    artist: string;
+    album: string;
 };
 
-export async function getMetadataFromFile(file: File) {
+export async function getMetadataFromFile(
+    file: File
+): Promise<{ title: string; artist: string; album: string; duration: number; bitrate: number }> {
+    // Parse AEAs / ATRAC wavs
+    if (file.name.toLowerCase().endsWith('.aea')) {
+        // Is most likely an AEA
+        const channelCount = await getChannelsFromAEA(file);
+        if (channelCount !== null) {
+            const dataSectionLength = file.size - 2048;
+            const soundGroupsCount = dataSectionLength / 212;
+            let totalSecondsOfAudio = (soundGroupsCount * 11.6) / 1000 / channelCount;
+            const titleBytes = new Uint8Array((await file.arrayBuffer()).slice(4, 4 + 256));
+            const firstNull = titleBytes.indexOf(0);
+            const titleString = new TextDecoder('ascii').decode(titleBytes.slice(0, firstNull === -1 ? 256 : firstNull));
+            return {
+                title: titleString || removeExtension(file.name),
+                artist: 'Unknown Artist',
+                album: 'Unknown Album',
+                duration: totalSecondsOfAudio,
+                bitrate: channelCount === 1 ? 146 : 292,
+            };
+        }
+    }
+
+    let at3CodecInfo = await getATRACOMAEncoding(file);
+    if (!at3CodecInfo) at3CodecInfo = await getATRACWAVEncoding(file);
+
+    if (at3CodecInfo !== 'ILLEGAL' && at3CodecInfo !== null) {
+        const dataSectionLengthKBits = ((file.size - at3CodecInfo.headerLength) * 8) / 1000;
+        // Estimate duration from bitrate.
+        const totalSecondsOfAudio = dataSectionLengthKBits / at3CodecInfo.format.bitrate;
+        return {
+            title: removeExtension(file.name),
+            artist: 'Unknown Artist',
+            album: 'Unknown Album',
+            duration: totalSecondsOfAudio,
+            bitrate: at3CodecInfo.format.bitrate,
+        };
+    }
+
     try {
         const fileData = await file.arrayBuffer();
         const blob = new Blob([new Uint8Array(fileData)]);
         let metadata = await mm.parseBlob(blob, { duration: true });
+        let bitrate = (metadata.format.bitrate ?? 0) / 1000;
         let duration = metadata.format.duration ?? 0;
         const title = metadata.common.title ?? removeExtension(file.name); //Fallback to file name if there's no title in the metadata.
         const artist = metadata.common.artist ?? 'Unknown Artist';
         const album = metadata.common.album ?? 'Unknown Album';
-        return { title, artist, album, duration };
+        return { title, artist, album, duration, bitrate };
     } catch (ex) {
         console.log(ex);
         return {
@@ -55,16 +113,26 @@ export async function getMetadataFromFile(file: File) {
             artist: 'Unknown Artist',
             album: 'Unknown Album',
             duration: 0,
+            bitrate: 0,
         };
     }
 }
 
-export async function getATRACOMAEncoding(file: File): Promise<{ format: 'LP2' | 'LP4'; headerLength: number } | 'ILLEGAL' | null> {
+export async function getChannelsFromAEA(file: File) {
+    if (file.size < 2048) return null; // Too short to be an AEA
+    const channelsOffset = 4 /* Magic */ + 256 /* title */ + 4 /* soundgroups */;
+    const channels = new Uint8Array((await file.arrayBuffer()).slice(channelsOffset, channelsOffset + 1))[0];
+    if (channels !== 1 && channels !== 2) return null;
+    return channels as 1 | 2;
+}
+
+export async function getATRACOMAEncoding(
+    file: File
+): Promise<{ format: { codec: 'AT3' | 'A3+'; bitrate: number }; headerLength: number } | 'ILLEGAL' | null> {
     const fileData = new Uint8Array(await file.arrayBuffer());
     if (file.size < 96) return null; // Too short to be an OMA
 
     let ea3Offset;
-
     if (Buffer.from(fileData.slice(0, 3)).toString() === 'ea3') {
         let tagLength = ((fileData[6] & 0x7f) << 21) | ((fileData[7] & 0x7f) << 14) | ((fileData[8] & 0x7f) << 7) | (fileData[9] & 0x7f);
         ea3Offset = tagLength + 10;
@@ -86,9 +154,8 @@ export async function getATRACOMAEncoding(file: File): Promise<{ format: 'LP2' |
     }
     let codecInfo = (ea3Header[33] << 16) | (ea3Header[34] << 8) | ea3Header[35];
     let codecType = ea3Header[32];
-    if (codecType === 1) return 'ILLEGAL'; // ATRAC3Plus
     if ([3, 4, 5].includes(codecType)) return null; // MP3 / LPCM / WMA - pass to ffmpeg.
-    if (codecType !== 0) return 'ILLEGAL'; // Unknown codec.
+    if (codecType !== 0 && codecType !== 1) return 'ILLEGAL'; // Unknown codec.
     // At this point, the OMA is known to be ATRAC3
 
     const sampleRateTable = [320, 441, 480, 882, 960, 0];
@@ -97,12 +164,25 @@ export async function getATRACOMAEncoding(file: File): Promise<{ format: 'LP2' |
     const frameSize = (codecInfo & 0x3ff) * 8;
     const jointStereo = (codecInfo >> 17) & 1;
 
-    if (frameSize === 384 && jointStereo === 0) return { format: 'LP2', headerLength };
-    if (frameSize === 192 && jointStereo === 1) return { format: 'LP4', headerLength };
+    if (codecType === 0) {
+        if (frameSize === 384 && jointStereo === 0) return { format: { codec: 'AT3', bitrate: 132 }, headerLength };
+        if (frameSize === 304 && jointStereo === 0) return { format: { codec: 'AT3', bitrate: 105 }, headerLength };
+        if (frameSize === 192 && jointStereo === 1) return { format: { codec: 'AT3', bitrate: 66 }, headerLength };
+        return 'ILLEGAL';
+    }
+
+    for (let [_kbps, fSize] of Object.entries(HiMDKBPSToFrameSize.atrac3plus)) {
+        let kbps = parseInt(_kbps);
+        if (fSize === frameSize + 8 && jointStereo === 0) {
+            return { format: { codec: 'A3+', bitrate: kbps }, headerLength };
+        }
+    }
     return 'ILLEGAL';
 }
 
-export async function getATRACWAVEncoding(file: File): Promise<{ format: 'LP2' | 'LP4'; headerLength: number } | null> {
+export async function getATRACWAVEncoding(
+    file: File
+): Promise<{ format: { codec: 'AT3' | 'A3+'; bitrate: number }; headerLength: number } | null> {
     const fileData = await file.arrayBuffer();
     if (file.size < 44) return null; // Too short to be a WAV
 
@@ -111,7 +191,7 @@ export async function getATRACWAVEncoding(file: File): Promise<{ format: 'LP2' |
 
     const wavType = Buffer.from(fileData.slice(20, 22)).readUInt16LE(0);
     const channels = Buffer.from(fileData.slice(22, 24)).readUInt16LE(0);
-    if (wavType !== 0x270 || channels !== 0x02) return null; // Not ATRAC3
+    if ((wavType !== 0x270 && wavType !== 0xfffe) || channels !== 0x02) return null; // Not ATRAC3
 
     let headerLength = 12;
     while (headerLength < fileData.byteLength) {
@@ -130,12 +210,20 @@ export async function getATRACWAVEncoding(file: File): Promise<{ format: 'LP2' |
     if (bytesSampleRate !== 44100) return null;
     switch (bytesPerFrame) {
         case 192:
-            return { format: 'LP2', headerLength };
+            return { format: { codec: 'AT3', bitrate: 132 }, headerLength };
+        case 152:
+            return { format: { codec: 'AT3', bitrate: 105 }, headerLength };
         case 96:
-            return { format: 'LP4', headerLength };
-        default:
-            return null;
+            return { format: { codec: 'AT3', bitrate: 66 }, headerLength };
     }
+
+    for (let [_kbps, fSize] of Object.entries(HiMDKBPSToFrameSize.atrac3plus)) {
+        let kbps = parseInt(_kbps);
+        if (fSize === bytesPerFrame * 2 && channels === 2) {
+            return { format: { codec: 'A3+', bitrate: kbps }, headerLength };
+        }
+    }
+    return null;
 }
 
 export async function sleepWithProgressCallback(ms: number, cb: (perc: number) => void) {
@@ -177,10 +265,6 @@ export function loadPreference<T>(key: string, defaultValue: T): T {
     }
 }
 
-export function framesToSec(frames: number) {
-    return frames / 512;
-}
-
 export function timeToSeekArgs(timeInSecs: number): number[] {
     let value = Math.round(timeInSecs); // ignore frames
 
@@ -201,23 +285,35 @@ export function secondsToNormal(time: number): string {
     return `${negative ? '-' : ''}${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export const EncodingName: { [k: number]: string } = {
-    [Encoding.sp]: 'SP',
-    [Encoding.lp2]: 'LP2',
-    [Encoding.lp4]: 'LP4',
-};
-
 export type DisplayTrack = {
     index: number;
     title: string;
     fullWidthTitle: string;
     group: string | null;
-    duration: string;
+    duration: number;
     encoding: string;
-    durationInSecs: number;
+
+    album?: string;
+    artist?: string;
 };
 
-export function getSortedTracks(disc: Disc | null) {
+export function pad(str: string | number, pad: string) {
+    return (pad + str).slice(-pad.length);
+}
+
+export function formatTimeFromSeconds(seconds: number) {
+    let s = seconds % 60;
+    seconds = (seconds - s) / 60; // min
+
+    let m = seconds % 60;
+    seconds = (seconds - m) / 60; // hour
+
+    let h = seconds;
+
+    return `${pad(h, '00')}:${pad(m, '00')}:${pad(s, '00')}`;
+}
+
+export function getSortedTracks(disc: Disc | null): DisplayTrack[] {
     let tracks: DisplayTrack[] = [];
     if (disc !== null) {
         for (let group of disc.groups) {
@@ -227,9 +323,11 @@ export function getSortedTracks(disc: Disc | null) {
                     title: track.title ?? `Unknown Title`,
                     fullWidthTitle: track.fullWidthTitle ?? ``,
                     group: group.title ?? null,
-                    encoding: EncodingName[track.encoding],
-                    duration: formatTimeFromFrames(track.duration, false),
-                    durationInSecs: track.duration / 512, // CAVEAT: 1s = 512 frames
+                    encoding: track.encoding.codec,
+                    duration: track.duration,
+
+                    album: track.album,
+                    artist: track.artist,
                 });
             }
         }
@@ -414,20 +512,97 @@ export function downloadBlob(buffer: Blob, fileName: string) {
     document.body.removeChild(a);
 }
 
-export function createDownloadTrackName(track: Track) {
+export function getTrackExtension(track: Track) {
+    const fileExtMap: { [key in typeof track.encoding.codec]: string } = {
+        SP: 'aea',
+        MONO: 'aea',
+        LP2: 'wav',
+        LP4: 'wav',
+        'A3+': 'oma',
+        AT3: 'oma',
+        MP3: 'mp3',
+        PCM: 'wav',
+    };
+    const extension = fileExtMap[track.encoding.codec];
+    return extension;
+}
+
+export function createDownloadTrackName(track: Track, useNERAWExtension?: boolean) {
     let title;
+    const index = (track.index + 1).toString().padStart(2, '0');
     if (track.title) {
-        title = `${track.index + 1}. ${track.title}`;
+        title = `${index}. ${track.title}`;
         if (track.fullWidthTitle) {
             title += ` (${track.fullWidthTitle})`;
         }
     } else if (track.fullWidthTitle) {
-        title = `${track.index + 1}. ${track.fullWidthTitle}`;
+        title = `${index}. ${track.fullWidthTitle}`;
     } else {
-        title = `Track ${track.index + 1}`;
+        title = `${index}. No title`;
     }
-    const fileName = title + ([Encoding.lp2, Encoding.lp4].includes(track.encoding) ? '.wav' : '.aea');
+    const fileName = `${title}.${useNERAWExtension ? 'neraw' : getTrackExtension(track)}`;
     return fileName;
+}
+
+export function getTracks(disc: Disc): Track[] {
+    let tracks: Track[] = [];
+    for (let group of disc.groups) {
+        for (let track of group.tracks) {
+            tracks.push(track);
+        }
+    }
+    return tracks;
+}
+
+export function useThemeDetector() {
+    const getCurrentTheme = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const [isDarkTheme, setIsDarkTheme] = useState(getCurrentTheme());
+    const mqListener = (e: any) => {
+        setIsDarkTheme(e.matches);
+    };
+
+    useEffect(() => {
+        const darkThemeMq = window.matchMedia('(prefers-color-scheme: dark)');
+        darkThemeMq.addEventListener('change', mqListener);
+        return () => darkThemeMq.removeEventListener('change', mqListener);
+    }, []);
+    return isDarkTheme;
+}
+
+export async function ffmpegTranscode(data: Uint8Array, inputFormat: string, outputParameters: string) {
+    let ffmpegProcess = createWorker({
+        logger: (payload: any) => {
+            console.log(payload.action, payload.message);
+        },
+        corePath: getPublicPathFor('ffmpeg-core.js'),
+        workerPath: getPublicPathFor('worker.min.js'),
+    });
+    await ffmpegProcess.load();
+
+    await ffmpegProcess.write(`audio.${inputFormat}`, data);
+    try {
+        await ffmpegProcess.transcode(`audio.${inputFormat}`, `raw`, outputParameters);
+    } catch (er) {
+        console.log(er);
+    }
+    const output = (await ffmpegProcess.read(`raw`)).data;
+    await ffmpegProcess.worker.terminate();
+    return output;
+}
+
+export async function convertToWAV(data: Uint8Array, track: Track): Promise<Uint8Array> {
+    const extension = getTrackExtension(track);
+    return ffmpegTranscode(data, extension, '-f wav');
+}
+
+export function dispatchQueue(
+    ...entries: ((dispatch: AppDispatch, getState: () => RootState) => Promise<void>)[]
+): (dispatch: AppDispatch, getState: () => RootState) => Promise<void> {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
+        for (let entry of entries) {
+            await entry(dispatch, getState);
+        }
+    };
 }
 
 declare let process: any;

@@ -8,13 +8,13 @@ import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import Slide from '@material-ui/core/Slide';
 import Button from '@material-ui/core/Button';
+import Link from '@material-ui/core/Link';
 import { makeStyles } from '@material-ui/core/styles';
 import { TransitionProps } from '@material-ui/core/transitions';
 import { useDispatch } from 'react-redux';
 import { actions as factoryNoticeDialogActions } from '../../redux/factory/factory-notice-dialog-feature';
 import { actions as appStateActions } from '../../redux/app-feature';
 import { readToc } from '../../redux/factory/factory-actions';
-import { Link } from '@material-ui/core';
 
 const useStyles = makeStyles(theme => ({
     mainText: {

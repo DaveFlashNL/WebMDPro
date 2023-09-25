@@ -1,17 +1,30 @@
-import { Mutex } from 'async-mutex';
-import { Group, Wireformat } from 'netmd-js';
+import { getCellsForTitle, getRemainingCharactersForTitles, MDTrack } from 'netmd-js';
 import { Logger } from 'netmd-js/dist/logger';
-import { asyncMutex } from '../utils';
-import { Capability, NetMDService } from './netmd';
+import { concatUint8Arrays } from 'netmd-js/dist/utils';
+import { makeGetAsyncPacketIteratorOnWorkerThread } from 'netmd-js/dist/web-encrypt-worker';
+import { asyncMutex } from '../../utils';
+import { Capability, NetMDService, Group, Disc, Track, convertDiscToNJS, convertTrackToNJS, Codec, WireformatDict } from './netmd';
+const Worker = require('worker-loader!netmd-js/dist/web-encrypt-worker.js'); // eslint-disable-line import/no-webpack-loader-syntax
 
-export class NetMDRemoteService implements NetMDService {
+export class NetMDRemoteService extends NetMDService {
     private logger?: Logger;
     private server: string;
-    public mutex = new Mutex();
     private capabilities: Capability[] | null = null;
     private friendlyName: string;
+    private useChunkedTransfersForLP: boolean;
 
-    constructor({ debug = false, serverAddress, friendlyName }: { debug: boolean; serverAddress: string; friendlyName: string }) {
+    constructor({
+        debug = false,
+        serverAddress,
+        friendlyName,
+        useChunkedTransfersForLP = false,
+    }: {
+        debug: boolean;
+        serverAddress: string;
+        friendlyName: string;
+        useChunkedTransfersForLP: boolean;
+    }) {
+        super();
         if (debug) {
             // Logging a few methods that have been causing issues with some units
             const _fn = (...args: any) => {
@@ -29,6 +42,19 @@ export class NetMDRemoteService implements NetMDService {
         }
         this.server = serverAddress.endsWith('/') ? serverAddress.substring(0, serverAddress.length - 1) : serverAddress;
         this.friendlyName = friendlyName;
+        this.useChunkedTransfersForLP = useChunkedTransfersForLP;
+    }
+
+    getRemainingCharactersForTitles(disc: Disc) {
+        return getRemainingCharactersForTitles(convertDiscToNJS(disc));
+    }
+
+    getCharactersForTitle(track: Track) {
+        const { halfWidth, fullWidth } = getCellsForTitle(convertTrackToNJS(track));
+        return {
+            halfWidth: halfWidth * 7,
+            fullWidth: fullWidth * 7,
+        };
     }
 
     private async fetchServerCapabilities() {
@@ -92,8 +118,9 @@ export class NetMDRemoteService implements NetMDService {
     }
 
     @asyncMutex
-    async listContent() {
-        return await this.getFromServer('listContent');
+    async listContent(flushCache?: boolean) {
+        if (!flushCache) flushCache = false;
+        return await this.getFromServer('listContent', { flushCache });
     }
 
     @asyncMutex
@@ -166,36 +193,76 @@ export class NetMDRemoteService implements NetMDService {
         return await this.getFromServer('moveTrack', { src, dst });
     }
 
-    async prepareUpload() { }
-    async finalizeUpload() { }
+    async prepareUpload() {
+        await this.getFromServer('prepareUpload');
+    }
+    async finalizeUpload() {
+        await this.getFromServer('finalizeUpload');
+    }
 
     @asyncMutex
     upload(
         title: string,
         fullWidthTitle: string,
         data: ArrayBuffer,
-        format: Wireformat,
+        _format: Codec,
         progressCallback: (progress: { written: number; encrypted: number; total: number }) => void
     ) {
         return new Promise<void>((res, rej) => {
+            let format = _format.codec === 'AT3' ? { codec: _format.bitrate === 66 ? 'LP4' : 'LP2' } : _format;
             const servURL = new URL(this.server);
             const wsURL = new URL(`${servURL.protocol === 'https:' ? 'wss:' : 'ws:'}//${servURL.host}/upload`);
+            //Send file
+
+            const total = data.byteLength;
+            let encrypted = 0;
+            let written = 0;
+
+            const updateProgress = () =>
+                progressCallback({
+                    written,
+                    total,
+                    encrypted,
+                });
+
+            let w = new Worker();
+
+            let webWorkerAsyncPacketIterator = makeGetAsyncPacketIteratorOnWorkerThread(w, ({ encryptedBytes }) => {
+                encrypted = encryptedBytes;
+                updateProgress();
+            });
+
+            // A dud track used for the encryption
+            const track = new MDTrack('', WireformatDict[format.codec], data, 0x400, '', webWorkerAsyncPacketIterator);
+            let codec = format.codec.toString();
             wsURL.search = new URLSearchParams({
                 title,
                 fullWidthTitle,
-                format: format.toString(),
+                format: codec,
+                totalLength: total.toString(),
+                chunked: (this.useChunkedTransfersForLP && format.codec !== 'SP').toString(),
             }).toString();
             const ws = new WebSocket(wsURL.toString());
 
-            //Send file
-
-            ws.addEventListener('message', event => {
-                const progress = JSON.parse(event.data);
-                progressCallback(progress);
-            });
-            ws.addEventListener('open', () => {
-                ws.send(data);
-                console.log('Ok sent file');
+            ws.addEventListener('message', async event => {
+                const json = JSON.parse(event.data);
+                if (json.init) {
+                    // Read and encrypt the file
+                    // Send the results of the encryption iterator to the server
+                    for await (let piece of track.getPacketWorkerIterator()) {
+                        // Serialize the piece
+                        const combined = concatUint8Arrays(new Uint8Array([0]), piece.iv, piece.key, piece.data);
+                        ws.send(combined);
+                    }
+                    ws.send(new Uint8Array([1]));
+                    w.terminate();
+                } else if (json.terminate) {
+                    ws.close();
+                    res();
+                } else {
+                    written = JSON.parse(event.data).written;
+                    updateProgress();
+                }
             });
 
             ws.addEventListener('close', () => res());

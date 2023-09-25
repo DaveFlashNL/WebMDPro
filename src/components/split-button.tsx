@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Button from '@material-ui/core/Button';
 import ButtonGroup from '@material-ui/core/ButtonGroup';
-import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ClickAwayListener from '@material-ui/core/ClickAwayListener';
 import Grow from '@material-ui/core/Grow';
 import Paper from '@material-ui/core/Paper';
@@ -90,7 +90,7 @@ export default function SplitButton(props: SplitButtonProps) {
                                 <MenuList id="split-button-menu" style={{ width: '100%' }}>
                                     {options.map((option, index) => (
                                         <MenuItem
-                                            key={option.name}
+                                            key={`${index}-connect-button`}
                                             selected={index === selectedIndex}
                                             onClick={event => handleMenuItemClick(event, index)}
                                         >

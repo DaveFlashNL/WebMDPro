@@ -12,7 +12,7 @@ import Box from '@material-ui/core/Box';
 import { makeStyles } from '@material-ui/core/styles';
 import { TransitionProps } from '@material-ui/core/transitions';
 import { W95RecordDialog } from './win95/record-dialog';
-import { Capability } from '../services/netmd';
+import { Capability } from '../services/interfaces/netmd';
 
 const useStyles = makeStyles(theme => ({
     progressPerc: {

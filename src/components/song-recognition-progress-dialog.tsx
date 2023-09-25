@@ -12,9 +12,13 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import Slide from '@material-ui/core/Slide';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import Box from '@material-ui/core/Box';
+import Button from '@material-ui/core/Button';
+import Step from '@material-ui/core/Step';
+import Stepper from '@material-ui/core/Stepper';
+import StepLabel from '@material-ui/core/StepLabel';
+import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import { TransitionProps } from '@material-ui/core/transitions';
-import { Button, Step, StepLabel, Stepper, Typography } from '@material-ui/core';
 
 const useStyles = makeStyles(theme => ({
     progressPerc: {

@@ -23,7 +23,6 @@
     "experimentalDecorators": true
   },
   "include": [
-    "src",
-    "src/lproj/index.tsx"
+    "src"
   ]
 }

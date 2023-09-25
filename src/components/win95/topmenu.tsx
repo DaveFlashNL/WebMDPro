@@ -1,7 +1,7 @@
 import React from 'react';
 import { List, ListItem, Checkbox, Divider } from 'react95';
 import { Views } from '../../redux/app-feature';
-import { Capability } from '../../services/netmd';
+import { Capability } from '../../services/interfaces/netmd';
 
 export const W95TopMenu = (props: {
     mainView: Views;
@@ -59,7 +59,7 @@ export const W95TopMenu = (props: {
     );
     items.push(
         <ListItem key={`menu-gh`}>
-            <a rel="noopener noreferrer" href="https://github.com/DaveFlashNL/WebMDPro" target="_blank">
+            <a rel="noopener noreferrer" href="https://github.com/asivery/webminidisc" target="_blank">
                 Fork me on GitHub
             </a>
         </ListItem>

@@ -7,13 +7,11 @@ import { actions as recordDialogAction } from './record-dialog-feature';
 import { actions as appStateActions } from './app-feature';
 import { actions as mainActions } from './main-feature';
 import { actions as convertDialogActions } from './convert-dialog-feature';
-import { actions as songRecognitionDialogActions } from './song-recognition-dialog-feature';
+import { actions as songRecognitionDialogActions, TitleEntry } from './song-recognition-dialog-feature';
 import { actions as songRecognitionProgressDialogActions } from './song-recognition-progress-dialog-feature';
 import serviceRegistry from '../services/registry';
-import { Wireformat, getTracks, Disc, DiscFormat, getRemainingCharactersForTitles, EncodingName, Encoding } from 'netmd-js';
 import { AnyAction } from '@reduxjs/toolkit';
 import {
-    framesToSec,
     sleepWithProgressCallback,
     sleep,
     askNotificationPermission,
@@ -23,17 +21,19 @@ import {
     downloadBlob,
     createDownloadTrackName,
     secondsToNormal,
-    getPublicPathFor,
+    getTracks,
+    convertToWAV,
+    ffmpegTranscode,
+    getTrackExtension,
 } from '../utils';
-import { UploadFormat } from './convert-dialog-feature';
 import NotificationCompleteIconUrl from '../images/record-complete-notification-icon.png';
 import { assertNumber, getHalfWidthTitleLength } from 'netmd-js/dist/utils';
-import { Capability, NetMDService } from '../services/netmd';
-import { getSimpleServices, ServiceConstructionInfo } from '../services/service-manager';
+import { Capability, NetMDService, Disc, Codec, MinidiscSpec, ExploitCapability } from '../services/interfaces/netmd';
+import { getSimpleServices, ServiceConstructionInfo } from '../services/interface-service-manager';
 import { AudioServices } from '../services/audio-export-service-manager';
-import { checkIfAtracDownloadPossible } from './factory/factory-actions';
-import { createWorker } from '@ffmpeg/ffmpeg';
+import { checkFactoryCapability, initializeFactoryMode } from './factory/factory-actions';
 import { Shazam } from 'shazam-api/dist/api';
+import { ExportParams } from '../services/audio/audio-export';
 
 export function control(action: 'play' | 'stop' | 'next' | 'prev' | 'goto' | 'pause' | 'seek', params?: unknown) {
     return async function (dispatch: AppDispatch, getState: () => RootState) {
@@ -242,7 +242,7 @@ export function deleteService(index: number) {
     };
 }
 
-export function pair(serviceInstance: NetMDService) {
+export function pair(serviceInstance: NetMDService, spec: MinidiscSpec) {
     return async function (dispatch: AppDispatch, getState: () => RootState) {
         dispatch(batchActions([appStateActions.setPairingFailed(false), appStateActions.setFactoryModeRippingInMainUi(false)]));
 
@@ -254,6 +254,7 @@ export function pair(serviceInstance: NetMDService) {
         await serviceRegistry.audioExportService!.init();
 
         serviceRegistry.netmdService = serviceInstance;
+        serviceRegistry.netmdSpec = spec;
         serviceRegistry.netmdFactoryService = undefined;
 
         try {
@@ -298,6 +299,7 @@ export function listContent(dropCache: boolean = false) {
             deviceStatus = await serviceRegistry.netmdService!.getDeviceStatus();
         } catch (e) {
             console.log('listContent: Cannot get device status');
+            console.log(e);
         }
         let deviceName = await serviceRegistry.netmdService!.getDeviceName();
         let deviceCapabilities = await serviceRegistry.netmdService!.getServiceCapabilities();
@@ -338,6 +340,28 @@ export function renameTrack(...entries: { index: number; newName: string; newFul
         try {
             for (const { index, newName, newFullWidthName } of entries) {
                 await netmdService!.renameTrack(index, newName, newFullWidthName);
+            }
+        } catch (err) {
+            console.error(err);
+            dispatch(
+                batchActions([
+                    errorDialogAction.setVisible(true),
+                    errorDialogAction.setErrorMessage(`Rename failed.`),
+                    appStateActions.setLoading(false),
+                ])
+            );
+        }
+        listContent()(dispatch);
+    };
+}
+
+export function himdRenameTrack(...entries: { index: number; title?: string; album?: string; artist?: string }[]) {
+    return async function (dispatch: AppDispatch) {
+        const { netmdService } = serviceRegistry;
+        dispatch(batchActions([renameDialogActions.setVisible(false), appStateActions.setLoading(true)]));
+        try {
+            for (const { index, title, album, artist } of entries) {
+                netmdService!.renameTrack(index, { title, album, artist });
             }
         } catch (err) {
             console.error(err);
@@ -409,7 +433,11 @@ export function moveTrack(srcIndex: number, destIndex: number) {
     };
 }
 
-export function downloadTracks(indexes: number[]) {
+export function downloadTracks(
+    indexes: number[],
+    convertOutputToWav: boolean,
+    callback: (blob: Blob, name: string) => void = downloadBlob
+) {
     return async function (dispatch: AppDispatch, getState: () => RootState) {
         dispatch(
             batchActions([
@@ -433,7 +461,7 @@ export function downloadTracks(indexes: number[]) {
                 })
             );
             try {
-                const { data } = (await netmdService!.download(track.index, ({ read, total }) => {
+                let { data } = (await netmdService!.download(track.index, ({ read, total }) => {
                     dispatch(
                         recordDialogAction.setProgress({
                             trackTotal: tracks.length,
@@ -442,9 +470,13 @@ export function downloadTracks(indexes: number[]) {
                             titleCurrent: track.title ?? '',
                         })
                     );
-                })) as { format: DiscFormat; data: Uint8Array };
-                const fileName = createDownloadTrackName(track);
-                downloadBlob(new Blob([data], { type: 'application/octet-stream' }), fileName);
+                }))!;
+                let fileName = createDownloadTrackName(track);
+                if (convertOutputToWav) {
+                    data = await convertToWAV(data, track);
+                    fileName = fileName.slice(0, -3) + 'wav';
+                }
+                callback(new Blob([data], { type: 'application/octet-stream' }), fileName);
             } catch (err) {
                 console.error(err);
                 dispatch(
@@ -492,6 +524,7 @@ export function recordTracks(indexes: number[], deviceId: string) {
             console.log('Waiting for track to be ready to play');
             let position = await netmdService!.getPosition();
             let expected = [track.index, 0, 0, 1];
+            // eslint-disable-next-line
             while (position === null || !expected.every((_, i) => expected[i] === position![i])) {
                 await sleep(250);
                 position = await netmdService!.getPosition();
@@ -506,9 +539,8 @@ export function recordTracks(indexes: number[], deviceId: string) {
             await netmdService!.play();
 
             // Wait until track is finished
-            let durationInSec = framesToSec(track.duration);
             // await sleep(durationInSec * 1000);
-            await sleepWithProgressCallback(durationInSec * 1000, (perc: number) => {
+            await sleepWithProgressCallback(track.duration * 1000, (perc: number) => {
                 dispatch(
                     recordDialogAction.setProgress({
                         trackTotal: tracks.length,
@@ -551,6 +583,53 @@ export function renameInConvertDialog({ index, newName, newFullWidthName }: { in
             fullWidthTitle: newFullWidthName,
         });
         dispatch(convertDialogActions.setTitles(newTitles));
+    };
+}
+
+export function renameInConvertDialogHiMD({
+    index,
+    title,
+    album,
+    artist,
+}: {
+    index: number;
+    title: string;
+    album: string;
+    artist: string;
+}) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
+        let newTitles = [...getState().convertDialog.titles];
+        newTitles.splice(index, 1, {
+            ...newTitles[index],
+            title,
+            artist,
+            album,
+        });
+        dispatch(convertDialogActions.setTitles(newTitles));
+    };
+}
+
+export function renameInSongRecognitionDialog({
+    index,
+    newName,
+    newFullWidthName,
+}: {
+    index: number;
+    newName: string;
+    newFullWidthName: string;
+}) {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
+        let newTitles = [...getState().songRecognitionDialog.titles];
+        newTitles.splice(index, 1, {
+            ...newTitles[index],
+            manualOverrideNewTitle: newName,
+            manualOverrideNewFullWidthTitle: newFullWidthName,
+
+            selectedToRecognize: true,
+            recognizeFail: false,
+            alreadyRecognized: true,
+        });
+        dispatch(songRecognitionDialogActions.setTitles(newTitles));
     };
 }
 
@@ -707,12 +786,14 @@ export function selfTest() {
                 console.groupEnd();
                 progress.titleCurrent = `Self-Test: ${test.name} - FAILED`;
                 dispatch(recordDialogAction.setProgress(progress));
-                alert(`Test '${test.name}' has failed. There's more info in the console.`);
-                return;
+                if (!window.confirm(`Test '${test.name}' has failed. There's more info in the console. Continue?`)) {
+                    return;
+                }
+            } else {
+                console.log('PASS');
+                console.groupEnd();
+                progress.titleCurrent = `Self-Test: ${test.name} - PASSED`;
             }
-            console.log('PASS');
-            console.groupEnd();
-            progress.titleCurrent = `Self-Test: ${test.name} - PASSED`;
             dispatch(recordDialogAction.setProgress(progress));
             await sleep(250); //Just to see what's happening
         }
@@ -740,37 +821,56 @@ export function setNotifyWhenFinished(value: boolean) {
     };
 }
 
-const csvHeader = ['INDEX', 'GROUP RANGE', 'GROUP NAME', 'GROUP FULL WIDTH NAME', 'NAME', 'FULL WIDTH NAME', 'DURATION', 'ENCODING'];
+const csvHeaderOld = ['INDEX', 'GROUP RANGE', 'GROUP NAME', 'GROUP FULL WIDTH NAME', 'NAME', 'FULL WIDTH NAME', 'DURATION', 'ENCODING'];
+const csvHeader = [
+    'INDEX',
+    'GROUP RANGE',
+    'GROUP NAME',
+    'GROUP FULL WIDTH NAME',
+    'NAME',
+    'FULL WIDTH NAME',
+    'ALBUM',
+    'ARTIST',
+    'DURATION',
+    'ENCODING',
+    'BITRATE',
+];
 
-export function exportCSV() {
+export function exportCSV(callback: (blob: Blob, name: string) => void = downloadBlob) {
     return async function (dispatch: AppDispatch, getState: () => RootState) {
         dispatch(appStateActions.setLoading(true));
         const disc = await serviceRegistry.netmdService!.listContent();
-        const rows: any[][] = [];
+        const rows: string[][] = [];
         rows.push([
-            0, // track index - 0 is disc title
+            '0', // track index - 0 is disc title
             '0-0', // No group range
             '', // No group name
             '', // No group fw name
             disc.title ?? '',
             disc.fullWidthTitle ?? '',
-            Math.round(framesToSec(disc.used)),
+            '', // no album
+            '', // no artist
+            '' + disc.used,
+            '',
             '',
         ]);
         for (const group of disc.groups) {
             const groupStart = Math.min(...group.tracks.map(e => e.index));
             const groupEnd = Math.max(...group.tracks.map(e => e.index));
-            const groupRange = group.index === 0 ? '' : `${groupStart}-${groupEnd}`;
+            const groupRange = group.title === null ? '' : `${groupStart}-${groupEnd}`;
             for (const track of group.tracks) {
                 rows.push([
-                    track.index + 1,
+                    '' + (track.index + 1),
                     groupRange,
                     group.title ?? '',
                     group.fullWidthTitle ?? '',
                     track.title ?? '',
                     track.fullWidthTitle ?? '',
-                    Math.round(framesToSec(track.duration)),
-                    EncodingName[track.encoding],
+                    track.album ?? '',
+                    track.artist ?? '',
+                    '' + track.duration,
+                    track.encoding.codec,
+                    track.encoding.bitrate?.toString() ?? '',
                 ]);
             }
         }
@@ -788,7 +888,7 @@ export function exportCSV() {
             title = 'Disc';
         }
 
-        downloadBlob(new Blob([csvDocument]), title + '.csv');
+        callback(new Blob([csvDocument]), title + '.csv');
         dispatch(appStateActions.setLoading(false));
     };
 }
@@ -796,13 +896,29 @@ export function exportCSV() {
 export function importCSV(file: File) {
     return async function (dispatch: AppDispatch, getState: () => RootState) {
         const text = new TextDecoder('utf-8').decode(await file.arrayBuffer());
+        const usesHiMDTitles = getState().main.deviceCapabilities.includes(Capability.himdTitles);
         const records = text
             .split('\n')
             .map(e => e.trim())
             .filter(e => e.length !== 0)
             .map(e => e.split(/(?<!\\),/g));
 
-        if (records.length === 0 || records[0].some((e, i) => e !== csvHeader[i])) {
+        if (records.length === 0) {
+            alert('Empty CSV file');
+            return;
+        }
+
+        // Backwards-compatibility
+        if (records[0].every((e, i) => e === csvHeaderOld[i])) {
+            // It's using the old format
+            records[0] = [...csvHeader];
+            for (let i = 1; i < records.length; i++) {
+                records[i].splice(6, 0, '', ''); // ALBUM, ARTIST
+                records[i].push(''); // BITRATE
+            }
+        }
+
+        if (records[0].some((e, i) => e !== csvHeader[i])) {
             alert('Malformed CSV file');
             return;
         }
@@ -830,7 +946,9 @@ export function importCSV(file: File) {
 
         await serviceRegistry.netmdService!.wipeDiscTitleInfo();
 
-        for (let [sIndex, gRange, groupName, groupFullWidthName, name, fwName, sDuration, encoding] of records.slice(1)) {
+        for (let [sIndex, gRange, groupName, groupFullWidthName, name, fwName, album, artist, sDuration, codec, bitrate] of records.slice(
+            1
+        )) {
             let index = parseInt(sIndex),
                 duration = parseInt(sDuration);
             gRange = gRange.replace(/ /g, '');
@@ -839,21 +957,30 @@ export function importCSV(file: File) {
                 await serviceRegistry.netmdService!.renameDisc(name, fwName);
                 continue;
             }
+            if (!ungroupedTracks[index - 1]) {
+                // Editing track that's not part of the disc.
+                // Skip.
+                continue;
+            }
 
-            let currentTrackEncoding = EncodingName[ungroupedTracks[index - 1].encoding];
+            let currentTrackEncoding = ungroupedTracks[index - 1].encoding;
             if (
-                !isTimeDifferenceAcceptable(framesToSec(ungroupedTracks[index - 1].duration), duration) ||
-                currentTrackEncoding !== encoding
+                !isTimeDifferenceAcceptable(ungroupedTracks[index - 1].duration, duration) ||
+                currentTrackEncoding.codec.toLowerCase() !== codec.toLowerCase() ||
+                (bitrate !== '' && currentTrackEncoding.bitrate !== parseInt(bitrate))
             ) {
+                const bitrateDescription = bitrate === '' ? '' : ` (${bitrate} kbps)`;
+                const actualBitrateDescription =
+                    currentTrackEncoding.bitrate === undefined ? '' : ` (${currentTrackEncoding.bitrate} kbps)`;
                 if (
                     !window.confirm(
                         `
-                    The CSV file describes track ${index} as a ${secondsToNormal(duration)} ${encoding} track.
-                    The actual track${index} is a ${secondsToNormal(
-                            framesToSec(ungroupedTracks[index - 1].duration)
-                        )} ${currentTrackEncoding} track.
-                    Label it according to the file?
-                `.trim()
+                    The CSV file describes track ${index} as a ${secondsToNormal(
+                            duration
+                        )} ${codec}${bitrateDescription} track. The actual track ${index} is a ${secondsToNormal(
+                            ungroupedTracks[index - 1].duration
+                        )} ${currentTrackEncoding.codec}${actualBitrateDescription} track. Label it according to the file?
+                        `.trim()
                     )
                 ) {
                     continue;
@@ -872,21 +999,18 @@ export function importCSV(file: File) {
                 }
             }
 
-            await serviceRegistry.netmdService!.renameTrack(index - 1, name, fwName);
+            if (usesHiMDTitles) {
+                await serviceRegistry.netmdService!.renameTrack(index - 1, { title: name, album, artist });
+            } else {
+                await serviceRegistry.netmdService!.renameTrack(index - 1, name, fwName);
+            }
         }
 
         listContent()(dispatch);
     };
 }
 
-export const WireformatDict: { [k: string]: Wireformat } = {
-    SP: Wireformat.pcm,
-    LP2: Wireformat.lp2,
-    LP105: Wireformat.l105kbps,
-    LP4: Wireformat.lp4,
-};
-
-export function openRecognizeTrackDialog() {
+export function openRecognizeTrackDialog(selectedTracks: number[]) {
     return async function (dispatch: AppDispatch, getState: () => RootState) {
         const { deviceCapabilities } = getState().main;
         if (deviceCapabilities.length > 0 && !deviceCapabilities.includes(Capability.factoryMode)) {
@@ -905,11 +1029,16 @@ export function openRecognizeTrackDialog() {
 
                             newTitle: '',
                             newFullWidthTitle: '',
+                            manualOverrideNewTitle: '',
+                            manualOverrideNewFullWidthTitle: '',
+
+                            unsanitizedTitle: null,
 
                             songAlbum: '',
                             songArtist: '',
                             songTitle: '',
 
+                            selectedToRecognize: selectedTracks.includes(track.index),
                             alreadyRecognized: false,
                             recognizeFail: false,
                         }))
@@ -920,7 +1049,8 @@ export function openRecognizeTrackDialog() {
     };
 }
 
-export function recognizeTracks(indices: number[], mode: 'exploits' | 'line-in', inputModeConfiguration?: { deviceId?: string }) {
+export function recognizeTracks(_trackEntries: TitleEntry[], mode: 'exploits' | 'line-in', inputModeConfiguration?: { deviceId?: string }) {
+    let trackEntries = [..._trackEntries];
     return async function (dispatch: AppDispatch, getState: () => RootState) {
         const shazam = new Shazam();
 
@@ -933,44 +1063,39 @@ export function recognizeTracks(indices: number[], mode: 'exploits' | 'line-in',
             });
         };
 
-        const tracks = [...getState().songRecognitionDialog.titles];
+        const toRecognize = trackEntries.filter(n => n.selectedToRecognize && !n.alreadyRecognized);
 
         dispatch(
             batchActions([
                 songRecognitionProgressDialogActions.setCancelled(false),
                 songRecognitionProgressDialogActions.setVisible(true),
                 songRecognitionProgressDialogActions.setCurrentTrack(0),
-                songRecognitionProgressDialogActions.setTotalTracks(indices.length),
+                songRecognitionProgressDialogActions.setTotalTracks(toRecognize.length),
             ])
         );
 
+        if (mode === 'exploits') {
+            if (!(await checkFactoryCapability(dispatch, ExploitCapability.downloadAtrac))) {
+                window.alert(
+                    'Cannot enable homebrew mode ripping in main UI.\nThis device is not supported yet.\nStay tuned for future updates.'
+                );
+                dispatch(songRecognitionProgressDialogActions.setVisible(false));
+                return;
+            }
+            await serviceRegistry.netmdFactoryService!.prepareDownload(getState().appState.factoryModeUseSlowerExploit);
+        }
+
         let i = 0;
-        for (let index of indices) {
-            dispatch(songRecognitionProgressDialogActions.setCurrentTrack(i++));
+        let toRecognizeI = 0;
+        for (let trackEntry of trackEntries) {
+            if (!trackEntry.selectedToRecognize || trackEntry.alreadyRecognized) {
+                i++;
+                continue;
+            }
+            dispatch(songRecognitionProgressDialogActions.setCurrentTrack(toRecognizeI));
 
             // 6 tries to get the song right:
-            const track = getTracks(getState().main.disc!).find(e => e.index === index)!;
-
-            const transcodeAnyToValid = async (data: Uint8Array, extension: string) => {
-                let ffmpegProcess = createWorker({
-                    logger: (payload: any) => {
-                        console.log(payload.action, payload.message);
-                    },
-                    corePath: getPublicPathFor('ffmpeg-core.js'),
-                    workerPath: getPublicPathFor('worker.min.js'),
-                });
-                await ffmpegProcess.load();
-
-                await ffmpegProcess.write(`audio.${extension}`, data);
-                try {
-                    await ffmpegProcess.transcode(`audio.${extension}`, `raw`, '-ar 16000 -ac 1 -f s16le');
-                } catch (er) {
-                    console.log(er);
-                }
-                const rawSamples = (await ffmpegProcess.read(`raw`)).data;
-                await ffmpegProcess.worker.terminate();
-                return rawSamples;
-            };
+            const track = getTracks(getState().main.disc!).find(e => e.index === trackEntry.index)!;
 
             for (let offset = 0; offset < 48; offset += 8) {
                 let rawSamples: Uint8Array;
@@ -982,20 +1107,14 @@ export function recognizeTracks(indices: number[], mode: 'exploits' | 'line-in',
                     ])
                 );
 
-                const optimalStartSeconds = Math.floor(framesToSec(track.duration) / 2) + offset;
+                const optimalStartSeconds = track.duration / 2 + offset;
 
                 if (mode === 'exploits') {
-                    if (!(await checkIfAtracDownloadPossible())) {
-                        window.alert(
-                            'Cannot enable homebrew mode ripping in main UI.\nThis device is not supported yet.\nStay tuned for future updates.'
-                        );
-                        dispatch(songRecognitionProgressDialogActions.setVisible(false));
-                        return;
-                    }
                     // Download the track
 
                     let atracData = await serviceRegistry.netmdFactoryService!.exploitDownloadTrack(
-                        index,
+                        trackEntry.index,
+                        false,
                         e =>
                             dispatch(
                                 batchActions([
@@ -1018,8 +1137,7 @@ export function recognizeTracks(indices: number[], mode: 'exploits' | 'line-in',
                         ])
                     );
 
-                    let extension = [Encoding.lp2, Encoding.lp4].includes(track.encoding) ? 'wav' : 'aea';
-                    rawSamples = await transcodeAnyToValid(atracData, extension);
+                    rawSamples = await ffmpegTranscode(atracData, getTrackExtension(track), '-ar 16000 -ac 1 -f s16le');
                 } else {
                     const deviceId = inputModeConfiguration!.deviceId!;
                     dispatch(songRecognitionProgressDialogActions.setCurrentStepTotal(100));
@@ -1052,7 +1170,7 @@ export function recognizeTracks(indices: number[], mode: 'exploits' | 'line-in',
                     const rawWav = await new Promise<Uint8Array>(res =>
                         mediaRecorderService!.recorder.exportWAV(async (blob: Blob) => res(new Uint8Array(await blob.arrayBuffer())))
                     );
-                    rawSamples = await transcodeAnyToValid(rawWav, 'wav');
+                    rawSamples = await ffmpegTranscode(rawWav, 'wav', '-ar 16000 -ac 1 -f s16le');
                     await mediaRecorderService?.closeStream();
                 }
                 dispatch(batchActions([songRecognitionProgressDialogActions.setCurrentStepProgress(-1)]));
@@ -1065,8 +1183,8 @@ export function recognizeTracks(indices: number[], mode: 'exploits' | 'line-in',
                     dispatch(songRecognitionProgressDialogActions.setCurrentStep(state === 'generating' ? 1 : 2))
                 );
                 if (songData !== null) {
-                    tracks[index] = {
-                        ...tracks[index],
+                    trackEntries[i] = {
+                        ...trackEntries[i],
                         alreadyRecognized: true,
                         recognizeFail: false,
 
@@ -1076,27 +1194,84 @@ export function recognizeTracks(indices: number[], mode: 'exploits' | 'line-in',
                     };
                     break;
                 } else {
-                    tracks[index] = {
-                        ...tracks[index],
+                    trackEntries[i] = {
+                        ...trackEntries[i],
                         recognizeFail: true,
                     };
                 }
                 if (getState().songRecognitionProgressDialog.cancelled) break;
             }
+            if (getState().songRecognitionProgressDialog.cancelled) break;
+            i++;
+            toRecognizeI++;
         }
+        if (mode === 'exploits') await serviceRegistry.netmdFactoryService!.finalizeDownload();
+        dispatch(
+            batchActions([songRecognitionDialogActions.setTitles(trackEntries), songRecognitionProgressDialogActions.setVisible(false)])
+        );
+    };
+}
 
-        dispatch(batchActions([songRecognitionDialogActions.setTitles(tracks), songRecognitionProgressDialogActions.setVisible(false)]));
+export function flushDevice() {
+    return async function (dispatch: AppDispatch, getState: () => RootState) {
+        const { netmdService } = serviceRegistry;
+        if (await netmdService!.canBeFlushed()) {
+            dispatch(appStateActions.setLoading(true));
+            await netmdService!.flush();
+            dispatch(batchActions([appStateActions.setLoading(false), mainActions.setFlushable(false)]));
+        }
     };
 }
 
 export function convertAndUpload(
     files: TitledFile[],
-    format: UploadFormat,
+    format: Codec,
     additionalParameters?: { loudnessTarget?: number; enableReplayGain: boolean }
 ) {
     return async function (dispatch: AppDispatch, getState: () => RootState) {
-        const { audioExportService, netmdService } = serviceRegistry;
-        const wireformat = WireformatDict[format];
+        const deviceCapabilities = getState().main.deviceCapabilities;
+        if (files.some(e => e.forcedEncoding?.codec === 'SPS' || e.forcedEncoding?.codec === 'SPM')) {
+            const removeSPFiles = () => (files = files.filter(e => e.forcedEncoding?.codec !== 'SPS' && e.forcedEncoding?.codec !== 'SPM'));
+            if (!deviceCapabilities.includes(Capability.factoryMode)) {
+                window.alert('Sorry! Your device cannot enter the factory mode. SP upload is not possible');
+                removeSPFiles();
+            } else if (!window.confirm("To upload ATRAC1 files back onto the MD, you're required to enter the homebrew mode.\nDo you want to continue?")) {
+                window.alert("SP Files won't be transferred");
+                removeSPFiles();
+            } else if (!(await checkFactoryCapability(dispatch, ExploitCapability.uploadAtrac1))) {
+                window.alert("Sorry! Your device doesn't support the SP upload exploit.");
+                removeSPFiles();
+            }
+        }
+        if (files.length === 0) return;
+
+        const { audioExportService, netmdService, netmdSpec } = serviceRegistry;
+        let { netmdFactoryService } = serviceRegistry;
+        if (format.codec === "MONO") {
+            // SP MONO is a homebrew feature
+            if (!deviceCapabilities.includes(Capability.factoryMode)) {
+                window.alert('Sorry! Your device cannot enter the factory mode. SP MONO upload is not possible');
+                dispatch(convertDialogActions.setVisible(true));
+                return;
+            } else if (!window.confirm("To upload MONO ATRAC files onto the MD, you're required to enter the homebrew mode.\nDo you want to continue?")) {
+                window.alert("Transfer cancelled");
+                dispatch(convertDialogActions.setVisible(true));
+                return
+            } else if (!(await checkFactoryCapability(dispatch, ExploitCapability.uploadMonoSP))) {
+                window.alert("Sorry! Your device doesn't support the SP MONO upload exploit.");
+                dispatch(convertDialogActions.setVisible(true));
+                return;
+            }
+
+            // Reload the factory service from registry
+            await initializeFactoryMode()(dispatch);
+            netmdFactoryService = serviceRegistry.netmdFactoryService;
+
+            // All good - load the exploit
+            await netmdFactoryService!.enableMonoUpload(true);
+        }
+
+        console.log(await netmdService?.getDeviceStatus());
 
         let screenWakeLock: any = null;
         if ('wakeLock' in navigator) {
@@ -1108,15 +1283,39 @@ export function convertAndUpload(
         }
 
         await netmdService?.stop();
-        dispatch(batchActions([uploadDialogActions.setVisible(true), uploadDialogActions.setCancelUpload(false)]));
+        dispatch(
+            batchActions([
+                uploadDialogActions.setVisible(true),
+                uploadDialogActions.setCancelUpload(false),
+                uploadDialogActions.setWriteProgress({ written: 0, encrypted: 0, total: 1 }),
+            ])
+        );
 
         let lastProgress = new Date().getTime();
+        const originalTitle = document.title;
+        let totalBytesAllTracks = 0,
+            totalBytesCalc = 0,
+            bytesSentFromPrevTracks = 0,
+            bytesSentFromThisTrack = 0;
+
         const updateProgressCallback = ({ written, encrypted, total }: { written: number; encrypted: number; total: number }) => {
             let now = new Date().getTime();
             if (now - lastProgress > 200) {
                 queueMicrotask(() => dispatch(uploadDialogActions.setWriteProgress({ written, encrypted, total })));
                 lastProgress = now;
+                bytesSentFromThisTrack = written;
+                updateTitle();
             }
+        };
+
+        const updateTitle = () => {
+            if (totalBytesAllTracks === 0) {
+                document.title = `Converting | ${originalTitle}`;
+                return;
+            }
+
+            const percentage = Math.floor((100 * (bytesSentFromThisTrack + bytesSentFromPrevTracks)) / totalBytesAllTracks);
+            document.title = `${percentage}% complete | Upload | ${originalTitle}`;
         };
 
         const hasUploadBeenCancelled = () => {
@@ -1158,7 +1357,9 @@ export function convertAndUpload(
         };
         const updateTrack = () => {
             dispatch(uploadDialogActions.setTrackProgress(trackUpdate));
+            updateTitle();
         };
+        updateTrack();
 
         let conversionIterator = async function* (files: TitledFile[]) {
             let converted: Promise<{ file: TitledFile; data: ArrayBuffer }>[] = [];
@@ -1168,6 +1369,7 @@ export function convertAndUpload(
                 if (i === files.length || hasUploadBeenCancelled()) {
                     trackUpdate.converting = i;
                     trackUpdate.titleConverting = ``;
+                    totalBytesAllTracks = totalBytesCalc;
                     updateTrack();
                     return;
                 }
@@ -1175,39 +1377,68 @@ export function convertAndUpload(
                 let f = files[i];
                 trackUpdate.converting = i;
                 trackUpdate.titleConverting = f.title;
+                let j = i;
                 updateTrack();
                 i++;
 
                 if (f.forcedEncoding === null) {
                     // This is not an ATRAC file
-                    converted.push(
-                        new Promise(async (resolve, reject) => {
-                            let data: ArrayBuffer;
-                            try {
-                                await audioExportService!.prepare(f.file);
-                                data = await audioExportService!.export({
-                                    format,
-                                    loudnessTarget: additionalParameters?.loudnessTarget,
-                                    enableReplayGain: additionalParameters?.enableReplayGain,
-                                });
-                                convertNext();
-                                resolve({ file: f, data: data });
-                            } catch (err) {
-                                error = err;
-                                errorMessage = `${f.file.name}: Unsupported or unrecognized format`;
-                                reject(err);
+                    converted[j] = new Promise(async (resolve, reject) => {
+                        let data: ArrayBuffer;
+                        try {
+                            await audioExportService!.prepare(f.file);
+
+                            let audioExportFormat: ExportParams['format'];
+                            switch (format.codec) {
+                                case 'LP2':
+                                    audioExportFormat = {
+                                        codec: 'AT3',
+                                        bitrate: 132,
+                                    };
+                                    break;
+                                case 'LP4':
+                                    audioExportFormat = {
+                                        codec: 'AT3',
+                                        bitrate: 66,
+                                    };
+                                    break;
+                                case 'SP':
+                                case 'MONO':
+                                    audioExportFormat = {
+                                        codec: 'PCM',
+                                    };
+                                    break;
+                                default:
+                                    audioExportFormat = {
+                                        codec: format.codec,
+                                        bitrate: format.bitrate,
+                                    };
+                                    break;
                             }
-                        })
-                    );
+
+                            data = await audioExportService!.export({
+                                format: audioExportFormat,
+                                loudnessTarget: additionalParameters?.loudnessTarget,
+                                enableReplayGain: additionalParameters?.enableReplayGain,
+                            });
+                            totalBytesCalc += data.byteLength;
+                            convertNext();
+                            resolve({ file: f, data: data });
+                        } catch (err) {
+                            error = err;
+                            errorMessage = `${f.file.name}: Unsupported or unrecognized format`;
+                            reject(err);
+                        }
+                    });
                 } else {
                     // This is already an ATRAC file - don't reencode.
-                    converted.push(
-                        new Promise(async resolve => {
-                            // Remove the WAV header.
-                            convertNext();
-                            resolve({ file: f, data: (await f.file.arrayBuffer()).slice(f.bytesToSkip) });
-                        })
-                    );
+                    converted[j] = new Promise(async resolve => {
+                        // Remove the WAV header.
+                        const data = (await f.file.arrayBuffer()).slice(f.bytesToSkip);
+                        totalBytesCalc += data.byteLength;
+                        convertNext();
+                        resolve({ file: f, data });
+                    });
                 }
             }
             convertNext();
@@ -1221,13 +1452,18 @@ export function convertAndUpload(
         };
 
         let disc = getState().main.disc;
+        let usesHiMDTitles = getState().main.deviceCapabilities.includes(Capability.himdTitles);
         let useFullWidth = getState().appState.fullWidthSupport;
-        let { halfWidth: availableHalfWidthCharacters, fullWidth: availableFullWidthCharacters } = getRemainingCharactersForTitles(disc!);
+        let {
+            halfWidth: availableHalfWidthCharacters,
+            fullWidth: availableFullWidthCharacters,
+        } = netmdSpec!.getRemainingCharactersForTitles(disc!);
 
         let error: any;
         let errorMessage = ``;
         let i = 1;
         await netmdService?.prepareUpload();
+
         for await (let item of conversionIterator(files)) {
             if (hasUploadBeenCancelled()) {
                 break;
@@ -1252,18 +1488,50 @@ export function convertAndUpload(
 
             trackUpdate.current = i++;
             trackUpdate.titleCurrent = halfWidthTitle;
+            if (fullWidthTitle) {
+                if (trackUpdate.titleCurrent) {
+                    trackUpdate.titleCurrent += ' / ';
+                }
+                trackUpdate.titleCurrent += fullWidthTitle;
+            }
+            bytesSentFromPrevTracks += bytesSentFromThisTrack;
+            bytesSentFromThisTrack = 0;
             updateTrack();
             updateProgressCallback({ written: 0, encrypted: 0, total: 100 });
-            try {
-                let formatOverride = file.forcedEncoding === null ? wireformat : WireformatDict[file.forcedEncoding];
-                await netmdService?.upload(halfWidthTitle, fullWidthTitle, data, formatOverride, updateProgressCallback);
-            } catch (err) {
-                error = err;
-                errorMessage = `${file.file.name}: Error uploading to device. There might not be enough space left, or an unknown error occurred.`;
-                break;
+            if (file.forcedEncoding?.codec === 'SPS' || file.forcedEncoding?.codec === 'SPM') {
+                // Uploading an AEA file.
+                await netmdFactoryService!.uploadSP(
+                    halfWidthTitle,
+                    fullWidthTitle,
+                    file.forcedEncoding.codec === 'SPM',
+                    data,
+                    updateProgressCallback
+                );
+            } else {
+                try {
+                    // SPS / SPM was filtered out before
+                    let formatOverride: Codec = (file.forcedEncoding as Codec | null) ?? format;
+                    await netmdService?.upload(
+                        usesHiMDTitles ? { title, artist: file.artist, album: file.album } : halfWidthTitle,
+                        fullWidthTitle,
+                        data,
+                        formatOverride,
+                        updateProgressCallback
+                    );
+                } catch (err) {
+                    error = err;
+                    errorMessage = `${file.file.name}: Error uploading to device. There might not be enough space left, or an unknown error occurred.`;
+                    break;
+                }
             }
         }
         await netmdService?.finalizeUpload();
+
+        if (format.codec === "MONO") {
+            netmdFactoryService!.enableMonoUpload(false);
+        }
+
+        document.title = originalTitle;
 
         let actionToDispatch: AnyAction[] = [uploadDialogActions.setVisible(false)];
 

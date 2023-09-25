@@ -1,6 +1,10 @@
-import { Box, IconButton, Tab, Tabs, Typography } from '@material-ui/core';
+import Box from '@material-ui/core/Box';
+import IconButton from '@material-ui/core/IconButton';
+import Tab from '@material-ui/core/Tab';
+import Tabs from '@material-ui/core/Tabs';
+import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
-import { ModeFlag, isValidFragment, TitleCell, Fragment, getTitleByTrackNumber } from 'netmd-tocmanip';
+import { ModeFlag, isValidFragment, TitleCell, Fragment, getTitleByTrackNumber, ToC } from 'netmd-tocmanip';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { exploitDownloadTracks, readToc, writeModifiedTOC } from '../../redux/factory/factory-actions';
@@ -8,10 +12,10 @@ import { useShallowEqualSelector } from '../../utils';
 import { actions as factoryActions } from '../../redux/factory/factory-feature';
 import { FactoryModeEditDialog } from './factory-fragment-mode-edit-dialog';
 import { batchActions } from 'redux-batched-actions';
-import { ExploitCapability } from '../../services/netmd';
-import DoneIcon from '@material-ui/icons/Done';
-import CloseIcon from '@material-ui/icons/Close';
-import GetAppIcon from '@material-ui/icons/GetApp';
+import { ExploitCapability } from '../../services/interfaces/netmd';
+import DoneIcon from '@mui/icons-material/Done';
+import CloseIcon from '@mui/icons-material/Close';
+import GetAppIcon from '@mui/icons-material/GetApp';
 import {
     DisplayableBlock,
     DiscAddressInput,
@@ -20,11 +24,13 @@ import {
     LinkSelector,
     ComponentOrDisabled,
     TocTable,
-    LabeledSelector,
+    LabeledNumberInput,
 } from './factory-components';
 import { FactoryModeProgressDialog } from './factory-progress-dialog';
 import { FactoryModeEditOtherValuesDialog } from './factory-edit-other-values-dialog';
 import { FactoryTopMenu } from './factory-topmenu';
+import { FactoryModeBadSectorDialog } from './factory-bad-sector-dialog';
+import { SettingsDialog } from '../settings-dialog';
 
 const useStyles = makeStyles(theme => ({
     tocTable: {
@@ -203,8 +209,8 @@ const Toc = () => {
 
     const handleUpdateLink = useCallback(
         (newLink: number) => {
-            let newTOC = JSON.parse(JSON.stringify(toc));
-            [newTOC.trackMap, newTOC.titleMap, newTOC.timeMap][selectedTab][selectedTile] = newLink;
+            let newTOC = JSON.parse(JSON.stringify(toc)) as ToC;
+            [newTOC.trackMap, newTOC.titleMap, newTOC.timestampMap][selectedTab][selectedTile] = newLink;
             dispatch(batchActions([factoryActions.setToc(newTOC), factoryActions.setModified(true)]));
         },
         [dispatch, toc, selectedTab, selectedTile]
@@ -212,8 +218,8 @@ const Toc = () => {
 
     const handleUpdateTOCSpace = useCallback(
         (name: string, value: any) => {
-            const newTOC = JSON.parse(JSON.stringify(toc));
-            [newTOC.trackFragmentList, newTOC.titleCellList, newTOC.timeList][selectedTab][selectedTile - 256][name] = value;
+            const newTOC = JSON.parse(JSON.stringify(toc)) as ToC;
+            ([newTOC.trackFragmentList, newTOC.titleCellList, newTOC.timestampList][selectedTab][selectedTile - 256] as any)[name] = value;
             dispatch(batchActions([factoryActions.setToc(newTOC), factoryActions.setModified(true)]));
         },
         [dispatch, toc, selectedTab, selectedTile]
@@ -229,7 +235,7 @@ const Toc = () => {
 
     const handleDownloadTrack = useCallback(
         (track: number) => {
-            dispatch(exploitDownloadTracks([track]));
+            dispatch(exploitDownloadTracks([track], false));
         },
         [dispatch]
     );
@@ -347,16 +353,16 @@ const Toc = () => {
             if (!fragment) return '';
             fragmentsSpace.push(
                 fragment.start.cluster.toString(16).padStart(4, '0') +
-                '.' +
-                fragment.start.sector.toString(16).padStart(2, '0') +
-                '.' +
-                fragment.start.group.toString(16) +
-                '...' +
-                fragment.end.cluster.toString(16).padStart(4, '0') +
-                '.' +
-                fragment.end.sector.toString(16).padStart(2, '0') +
-                '.' +
-                fragment.end.group.toString(16)
+                    '.' +
+                    fragment.start.sector.toString(16).padStart(2, '0') +
+                    '.' +
+                    fragment.start.group.toString(16) +
+                    '...' +
+                    fragment.end.cluster.toString(16).padStart(4, '0') +
+                    '.' +
+                    fragment.end.sector.toString(16).padStart(2, '0') +
+                    '.' +
+                    fragment.end.group.toString(16)
             );
             index = fragment.link;
             if (++i > 2) {
@@ -518,32 +524,32 @@ const Toc = () => {
                                     <Typography variant="h5" className={classes.infoText}>
                                         Timestamp {selectedTile - 256}
                                     </Typography>
-                                    <LabeledSelector
+                                    <LabeledNumberInput
                                         value={toc.timestampList[selectedTile - 256].year}
                                         setValue={e => handleUpdateTOCSpace('year', e)}
                                         name="Year"
                                     />
-                                    <LabeledSelector
+                                    <LabeledNumberInput
                                         value={toc.timestampList[selectedTile - 256].month}
                                         setValue={e => handleUpdateTOCSpace('month', e)}
                                         name="Month"
                                     />
-                                    <LabeledSelector
+                                    <LabeledNumberInput
                                         value={toc.timestampList[selectedTile - 256].day}
                                         setValue={e => handleUpdateTOCSpace('day', e)}
                                         name="Day"
                                     />
-                                    <LabeledSelector
+                                    <LabeledNumberInput
                                         value={toc.timestampList[selectedTile - 256].hour}
                                         setValue={e => handleUpdateTOCSpace('hour', e)}
                                         name="Hour"
                                     />
-                                    <LabeledSelector
+                                    <LabeledNumberInput
                                         value={toc.timestampList[selectedTile - 256].minute}
                                         setValue={e => handleUpdateTOCSpace('minute', e)}
                                         name="Minute"
                                     />
-                                    <LabeledSelector
+                                    <LabeledNumberInput
                                         value={toc.timestampList[selectedTile - 256].signature}
                                         setValue={e => handleUpdateTOCSpace('signature', e)}
                                         name="Signature"
@@ -557,7 +563,9 @@ const Toc = () => {
             )}
             <FactoryModeEditDialog />
             <FactoryModeProgressDialog />
+            <FactoryModeBadSectorDialog />
             <FactoryModeEditOtherValuesDialog />
+            <SettingsDialog />
         </React.Fragment>
     );
 };

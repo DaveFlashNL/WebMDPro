@@ -1,9 +1,9 @@
-import { debounce, DisplayTrack, getSortedTracks, sleep } from '../utils';
-import { createEmptyWave } from '../create-empty-wave';
-import { control } from '../redux/actions';
-import { AppStore, AppSubscribe, AppGetState } from '../redux/store';
+import { debounce, DisplayTrack, getSortedTracks, sleep } from '../../utils';
+import { createEmptyWave } from '../../create-empty-wave';
+import { control } from '../../redux/actions';
+import { AppStore, AppSubscribe, AppGetState } from '../../redux/store';
 import { Dispatch } from '@reduxjs/toolkit';
-import { Disc } from 'netmd-js';
+import { Disc } from '../interfaces/netmd';
 
 export interface MediaSessionService {
     init(): Promise<void>;
@@ -120,7 +120,7 @@ export class BrowserMediaSessionService {
         const allTracks = this.getSortedTracksWithCache(disc);
         const currentTrack: DisplayTrack | undefined = allTracks[currentTrackIndex];
         const currentTrackTitle = currentTrack ? currentTrack.fullWidthTitle || currentTrack?.title : '';
-        const currentTrackDurationInSecs = Math.round(currentTrack?.durationInSecs ?? -1);
+        const currentTrackDurationInSecs = Math.round(currentTrack?.duration ?? -1);
 
         const oldTrackTitle = navigator.mediaSession.metadata?.title;
         const oldDiscTitle = navigator.mediaSession.metadata?.album;

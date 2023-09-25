@@ -27,6 +27,15 @@ build_x264() {
   cd ${ROOT_DIR}
 }
 
+build_lame(){
+  cd third_party
+  git clone https://github.com/zlargon/lame
+  cd lame
+  emconfigure ./configure --prefix=$BUILD_DIR
+  emmake make install -j${NPROC}
+  cd ${ROOT_DIR}
+}
+
 configure_ffmpeg() {
   emconfigure ./configure \
     --nm="llvm-nm -g" \
@@ -71,46 +80,62 @@ configure_ffmpeg() {
   --enable-rdft \
   \
   --disable-demuxers \
+  --enable-demuxer=image2 \
+  --enable-demuxer=aac \
   --enable-demuxer=alac \
   --enable-demuxer=aea \
   --enable-demuxer=ffmetadata \
-  --enable-demuxer=aiff \
   --enable-demuxer=oma \
-  --enable-demuxer=aac \
   --enable-demuxer=ac3 \
+  --enable-demuxer=aiff \
   --enable-demuxer=ape \
   --enable-demuxer=asf \
+  --enable-demuxer=au \
+  --enable-demuxer=avi \
   --enable-demuxer=flac \
+  --enable-demuxer=flv \
+  --enable-demuxer=matroska \
+  --enable-demuxer=mov \
+  --enable-demuxer=m4v \
   --enable-demuxer=mp3 \
   --enable-demuxer=mpc \
-  --enable-demuxer=mov \
   --enable-demuxer=mpc8 \
   --enable-demuxer=ogg \
+  --enable-demuxer=pcm_alaw \
+  --enable-demuxer=pcm_mulaw \
+  --enable-demuxer=pcm_f64be \
+  --enable-demuxer=pcm_f64le \
+  --enable-demuxer=pcm_f32be \
+  --enable-demuxer=pcm_f32le \
+  --enable-demuxer=pcm_s32be \
+  --enable-demuxer=pcm_s32le \
+  --enable-demuxer=pcm_s24be \
+  --enable-demuxer=pcm_s24le \
+  --enable-demuxer=pcm_s16be \
+  --enable-demuxer=pcm_s16le \
+  --enable-demuxer=pcm_s8 \
+  --enable-demuxer=pcm_u32be \
+  --enable-demuxer=pcm_u32le \
+  --enable-demuxer=pcm_u24be \
+  --enable-demuxer=pcm_u24le \
+  --enable-demuxer=pcm_u16be \
+  --enable-demuxer=pcm_u16le \
+  --enable-demuxer=pcm_u8 \
+  --enable-demuxer=rm \
+  --enable-demuxer=shorten \
+  --enable-demuxer=tak \
   --enable-demuxer=tta \
   --enable-demuxer=wav \
   --enable-demuxer=wv \
-  --enable-demuxer=pcm_alaw \
-  --enable-demuxer=pcm_f32be \
-  --enable-demuxer=pcm_f32le \
-  --enable-demuxer=pcm_f64be \
-  --enable-demuxer=pcm_f64le \
-  --enable-demuxer=pcm_s16be \
-  --enable-demuxer=pcm_s16le \
-  --enable-demuxer=pcm_s24be \
-  --enable-demuxer=pcm_s24le \
-  --enable-demuxer=pcm_s32be \
-  --enable-demuxer=pcm_s32le \
-  --enable-demuxer=pcm_s8 \
-  --enable-demuxer=pcm_u16be \
-  --enable-demuxer=pcm_u16le \
-  --enable-demuxer=pcm_u24be \
-  --enable-demuxer=pcm_u24le \
+  --enable-demuxer=xwma \
+  --enable-demuxer=dsf  \
   \
   --disable-muxers \
   --enable-muxer=ffmetadata \
   --enable-muxer=fifo \
   --enable-muxer=null \
   --enable-muxer=oma \
+  --enable-muxer=mp3 \
   --enable-muxer=rawvideo \
   --enable-muxer=wav \
   --enable-muxer=pcm_alaw \
@@ -131,22 +156,45 @@ configure_ffmpeg() {
   --enable-muxer=pcm_u24le \
   \
   --disable-decoders \
+  --enable-decoder=aac \
+  --enable-decoder=aac_latm \
+  --enable-decoder=ac3 \
   --enable-decoder=alac \
+  --enable-decoder=als \
+  --enable-decoder=ape \
   --enable-decoder=atrac1 \
   --enable-decoder=atrac3 \
-  --enable-decoder=opus \
-  --enable-decoder=aac \
-  --enable-decoder=ac3 \
-  --enable-decoder=ape \
+  --enable-decoder=atrac3p \
+  --enable-decoder=eac3 \
   --enable-decoder=flac \
+  --enable-decoder=gsm \
+  --enable-decoder=gsm_ms \
   --enable-decoder=mp1 \
+  --enable-decoder=mp1float \
   --enable-decoder=mp2 \
+  --enable-decoder=mp2float \
   --enable-decoder=mp3 \
+  --enable-decoder=mp3adu \
+  --enable-decoder=mp3adufloat \
+  --enable-decoder=mp3float \
+  --enable-decoder=mp3on4 \
+  --enable-decoder=mp3on4float \
   --enable-decoder=mpc7 \
   --enable-decoder=mpc8 \
+  --enable-decoder=opus \
+  --enable-decoder=ra_144 \
+  --enable-decoder=ra_288 \
+  --enable-decoder=ralf \
+  --enable-decoder=shorten \
+  --enable-decoder=tak \
   --enable-decoder=tta \
   --enable-decoder=vorbis \
   --enable-decoder=wavpack \
+  --enable-decoder=wmalossless \
+  --enable-decoder=wmapro \
+  --enable-decoder=wmav1 \
+  --enable-decoder=wmav2 \
+  --enable-decoder=wmavoice  \
   --enable-decoder=pcm_alaw \
   --enable-decoder=pcm_dvd \
   --enable-decoder=pcm_f32be \
@@ -185,6 +233,9 @@ configure_ffmpeg() {
   --enable-encoder=pcm_u16le \
   --enable-encoder=pcm_u24be \
   --enable-encoder=pcm_u24le \
+  --enable-encoder=libmp3lame \
+  --enable-encoder=mp3 \
+  --enable-encoder=wrapped_avframe \
   \
   --disable-filters \
   --enable-filter=acompressor \
@@ -275,7 +326,7 @@ configure_ffmpeg() {
   --enable-filter=vibrato \
   --enable-filter=volume \
   --enable-filter=volumedetect \
-
+  --enable-libmp3lame
 }
 
 make_ffmpeg() {
@@ -288,7 +339,7 @@ build_ffmpegjs() {
     -Llibavcodec -Llibavdevice -Llibavfilter -Llibavformat -Llibavresample -Llibavutil -Llibpostproc -Llibswscale -Llibswresample -Llibpostproc -L${BUILD_DIR}/lib \
     -Qunused-arguments -Oz \
     -o $2 fftools/ffmpeg_opt.c fftools/ffmpeg_filter.c fftools/ffmpeg_hw.c fftools/cmdutils.c fftools/ffmpeg.c \
-    -lavdevice -lavfilter -lavformat -lavcodec -lswresample -lswscale -lavutil -lpostproc -lm -lx264 -lz \
+    -lavdevice -lavfilter -lavformat -lavcodec -lswresample -lswscale -lavutil -lpostproc -lm -lx264 -lz -lmp3lame \
     --closure 1 \
     --pre-js javascript/prepend.js \
     --post-js javascript/post.js \
@@ -302,6 +353,7 @@ build_ffmpegjs() {
 }
 
 main() {
+  build_lame
   build_zlib
   build_x264
   configure_ffmpeg

@@ -4,14 +4,14 @@
 // @version      0.1.0
 // @namespace    http://tampermonkey.net/
 // @author       Asivery
-// @match        https://web.minidisc.wiki/
+// @match        https://webmd.pro/
 // @grant        GM.xmlHttpRequest
 // @grant        unsafeWindow
 // @run-at       document-start
 // @connect      amp.shazam.com
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
     unsafeWindow.native = {
         unrestrictedFetchJSON: (url, parameters = {}) => new Promise((res, rej) => {
@@ -25,6 +25,7 @@
                 onerror: error =>
                     rej(error)
             })
-        })};
+        })
+    };
     console.log("[Userscript]: Attached ElectronWMD's fetch method successfully!");
 })();

@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { enableBatching } from 'redux-batched-actions';
 import { CustomParameters } from '../custom-parameters';
-import { filterOutCorrupted, getSimpleServices, ServiceConstructionInfo } from '../services/service-manager';
+import { filterOutCorrupted, getSimpleServices, ServiceConstructionInfo } from '../services/interface-service-manager';
 import { savePreference, loadPreference } from '../utils';
 
 export type Views = 'WELCOME' | 'MAIN' | 'FACTORY';
@@ -12,9 +12,13 @@ export interface AppState {
     pairingFailed: boolean;
     pairingMessage: string;
     browserSupported: boolean;
-    darkMode: boolean;
+    colorTheme: 'dark' | 'light' | 'system';
+    userLang: 'syslang' | 'english' | 'dutch' | 'german' | 'polish';
     vintageMode: boolean;
     aboutDialogVisible: boolean;
+    discProtectedDialogVisible: boolean;
+    discProtectedDialogDisabled: boolean;
+    settingsDialogVisible: boolean;
     changelogDialogVisible: boolean;
     notifyWhenFinished: boolean;
     hasNotificationSupport: boolean;
@@ -24,20 +28,29 @@ export interface AppState {
     factoryModeRippingInMainUi: boolean;
     audioExportService: number;
     audioExportServiceConfig: CustomParameters;
+    pageFullHeight: boolean;
+    pageFullWidth: boolean;
+    archiveDiscCreateZip: boolean;
+    factoryModeUseSlowerExploit: boolean;
+    factoryModeShortcuts: boolean;
+    factoryModeNERAWDownload: boolean;
 }
 
 export const buildInitialState = (): AppState => {
-
     return {
         mainView: 'WELCOME',
         loading: false,
         pairingFailed: false,
         pairingMessage: ``,
         browserSupported: true,
-        darkMode: loadPreference('darkMode', window.matchMedia("(prefers-color-scheme: dark)").matches),
+        colorTheme: loadPreference('colorTheme', 'system'),
+        userLang: loadPreference('setUserLang', 'syslang'),
         vintageMode: loadPreference('vintageMode', false),
         changelogDialogVisible: false,
         aboutDialogVisible: false,
+        discProtectedDialogVisible: false,
+        discProtectedDialogDisabled: loadPreference('discProtectedDialogDisabled', false),
+        settingsDialogVisible: false,
         notifyWhenFinished: loadPreference('notifyWhenFinished', false),
         hasNotificationSupport: true,
         fullWidthSupport: loadPreference('fullWidthSupport', false),
@@ -47,6 +60,12 @@ export const buildInitialState = (): AppState => {
         // it should not be stored in the preferences, and should default to false.
         audioExportService: loadPreference('audioExportService', 0),
         audioExportServiceConfig: loadPreference('audioExportServiceConfig', {}),
+        pageFullHeight: loadPreference('pageFullHeight', false),
+        pageFullWidth: loadPreference('pageFullWidth', false),
+        archiveDiscCreateZip: loadPreference('archiveDiscCreateZip', false),
+        factoryModeUseSlowerExploit: loadPreference('factoryModeUseSlowerExploit', false),
+        factoryModeShortcuts: loadPreference('factoryModeShortcuts', false),
+        factoryModeNERAWDownload: loadPreference('factoryModeNERAWDownload', false),
     };
 };
 
@@ -72,9 +91,13 @@ export const slice = createSlice({
         setBrowserSupported: (state, action: PayloadAction<boolean>) => {
             state.browserSupported = action.payload;
         },
-        setDarkMode: (state, action: PayloadAction<boolean>) => {
-            state.darkMode = action.payload;
-            savePreference('darkMode', state.darkMode);
+        setDarkMode: (state, action: PayloadAction<'dark' | 'light' | 'system'>) => {
+            state.colorTheme = action.payload;
+            savePreference('colorTheme', state.colorTheme);
+        },
+        setUserLang: (state, action: PayloadAction<'syslang' | 'english' | 'dutch' | 'german' | 'polish'>) => {
+            state.userLang = action.payload;
+            savePreference('userLang', state.userLang);
         },
         setNotifyWhenFinished: (state, action: PayloadAction<boolean>) => {
             state.notifyWhenFinished = action.payload;
@@ -89,6 +112,16 @@ export const slice = createSlice({
         },
         showAboutDialog: (state, action: PayloadAction<boolean>) => {
             state.aboutDialogVisible = action.payload;
+        },
+        showDiscProtectedDialog: (state, action: PayloadAction<boolean>) => {
+            state.discProtectedDialogVisible = action.payload;
+        },
+        disableDiscProtectedDialog: (state, action: PayloadAction<boolean>) => {
+            state.discProtectedDialogDisabled = action.payload;
+            savePreference('discProtectedDialogDisabled', action.payload);
+        },
+        showSettingsDialog: (state, action: PayloadAction<boolean>) => {
+            state.settingsDialogVisible = action.payload;
         },
         showChangelogDialog: (state, action: PayloadAction<boolean>) => {
             state.changelogDialogVisible = action.payload;
@@ -119,6 +152,30 @@ export const slice = createSlice({
         setAudioExportServiceConfig: (state, action: PayloadAction<CustomParameters>) => {
             state.audioExportServiceConfig = action.payload;
             savePreference('audioExportServiceConfig', state.audioExportServiceConfig);
+        },
+        setPageFullHeight: (state, action: PayloadAction<boolean>) => {
+            state.pageFullHeight = action.payload;
+            savePreference('pageFullHeight', action.payload);
+        },
+        setPageFullWidth: (state, action: PayloadAction<boolean>) => {
+            state.pageFullWidth = action.payload;
+            savePreference('pageFullWidth', action.payload);
+        },
+        setArchiveDiscCreateZip: (state, action: PayloadAction<boolean>) => {
+            state.archiveDiscCreateZip = action.payload;
+            savePreference('archiveDiscCreateZip', action.payload);
+        },
+        setFactoryModeUseSlowerExploit: (state, action: PayloadAction<boolean>) => {
+            state.factoryModeUseSlowerExploit = action.payload;
+            savePreference('factoryModeUseSlowerExploit', action.payload);
+        },
+        setFactoryModeShortcuts: (state, action: PayloadAction<boolean>) => {
+            state.factoryModeShortcuts = action.payload;
+            savePreference('factoryModeShortcuts', action.payload);
+        },
+        setFactoryModeNERAWDownload: (state, action: PayloadAction<boolean>) => {
+            state.factoryModeNERAWDownload = action.payload;
+            savePreference('factoryModeNERAWDownload', action.payload);
         },
     },
 });

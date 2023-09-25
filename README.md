@@ -9,6 +9,17 @@ For now the extra features of Web Minidisc Pro are:
 - The ability to connect to NetMD units available on the local network with the help of [Remote NetMD](https://github.com/asivery/remote-netmd-server)
 - Downloading tracks straight from the player via NetMD (only for Sony MZ-RH1 users)
 - Downloading tracks straight from the player via NetMD factory mode using exploits. (only certain models)
+- Improved handling of pre-encoded ATRAC3 tracks
+- Song Recognition
+- The ability to use an external ATRAC3 encoder for better audio quality when using LP modes
+
+*The following features depend on exploits and/or factory mode commands. See [netmd-exploits](https://github.com/asivery/netmd-exploits/) for a list of supported devices*
+- Downloading tracks from any Sony (or Aiwa) NetMD device
+- Firmware and RAM dumping 
+- TOC manipulation
+- Tetris
+- HI-MD support in full mode with atrac3/atrac3+ and mp3 upload
+
 But there are more features on the way.
 
 Live @ [webmd.pro](https://webmd.pro)</br>
@@ -24,14 +35,6 @@ Requires *Chrome* or any other browser that supports both **WASM** and **WebUSB*
 - Community -> [reddit](https://www.reddit.com/r/minidisc/) & [discord](https://discord.gg/Vm29q3nuUk)
 - Socials -> [twitter](https://twitter.com/minidisc_wiki), [instagram](https://wwww.instagram.com/MiniDisc_wiki/) & [FaceBook](https://www.facebook.com/onlyminidisc/) (Only MiniDisc Asia)
 - MiniDisci.wiki -> [https://www.minidisc.wiki/](https://www.minidisc.wiki/)
-
-### How to Contribute
-Every contribute is welcome but, please, reach out to me before working on any PR. I've built this app mainly for personal use and I wish to keep it as light as possible in terms of features.
-
-### Bugs and Issues
-There might be plenty of them, for sure :) . The thing is that I've not the time to fix all of them and to make sure this app works on every browser or device.
-
-The best way to get a bug fixed, a feature implemented, or a device supported, is to fork the project and do it for yourself. I'll try to provide support as best as I can.
 
 ### How to build
 
@@ -97,10 +100,20 @@ After a quick inspection to the source code I realized the project could be easi
 That's it. It was a LOT of fun :).
 ____
 
-### Some OSS used:
-- [FFmpeg](https://www.ffmpeg.org/) and [ffmpegjs](https://github.com/ffmpegjs/FFmpeg), to read audio files (wav, mp3, ogg, mp4, etc...).
-- [Atracdenc](https://github.com/dcherednik/atracdenc/), to support atrac3 encoding (lp2, lp4 audio formats).
-- [Emscripten](https://emscripten.org/), to run both FFmpeg and Atracdenc in the browser.
-- [netmd-js](https://github.com/cybercase/netmd-js), forked from cybercase, to send commands to NetMD devices using Javascript.
-- [material-ui](https://material-ui.com/), to build the user interface.
-- [linux-minidisc](https://github.com/linux-minidisc/linux-minidisc), to build the netmd-js library.
+-----
+### How to Contribute
+Every contribute is welcome but, please, reach out to me before working on any PR. I've built this app mainly for personal use and I wish to keep it as light as possible in terms of features.
+
+### Bugs and Issues
+There might be plenty of them, for sure :) . The thing is that I've not the time to fix all of them and to make sure this app works on every browser or device.
+
+The best way to get a bug fixed, a feature implemented, or a device supported, is to fork the project and do it for yourself. I'll try to provide support as best as I can.
+
+## Credits
+- [FFmpeg](https://www.ffmpeg.org/) *and* [ffmpegjs](https://github.com/ffmpegjs/FFmpeg) *to read audio files (wav, mp3, ogg, mp4, etc...).*
+- [Atracdenc](https://github.com/dcherednik/atracdenc/) *to support atrac3 encoding (lp2, lp4 audio formats).*
+- [Emscripten](https://emscripten.org/) *to run both FFmpeg and Atracdenc in the browser.*
+- [netmd-js](https://github.com/cybercase/netmd-js) *to send commands to NetMD devices using Javascript*
+- [material-ui](https://material-ui.com/) *to build the user interface.*
+- [linux-minidisc](https://github.com/linux-minidisc/linux-minidisc) *to build the netmd-js library.*
+- [netmd-exploits](https://github.com/asivery/netmd-exploits/) *For factory mode commands and track dumping*

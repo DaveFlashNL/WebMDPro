@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, WindowHeader, Fieldset, Select } from 'react95';
-import { Capability } from '../../services/netmd';
+import { Capability } from '../../services/interfaces/netmd';
 import { Controls } from '../controls';
 import { DialogOverlay, DialogWindow, DialogFooter, DialogWindowContent, WindowCloseIcon, FooterButton } from './common';
 

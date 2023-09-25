@@ -1,7 +1,9 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
 import { useShallowEqualSelector } from '../utils';
+
 import { actions as appActions } from '../redux/app-feature';
+
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
@@ -15,6 +17,8 @@ import { makeStyles } from '@material-ui/core/styles';
 import { TransitionProps } from '@material-ui/core/transitions';
 import { W95AboutDialog } from './win95/about-dialog';
 import { GIT_DIFF, GIT_HASH, BUILD_DATE } from '../version-info';
+import { AboutTranslations } from '../languages';
+const t = AboutTranslations;
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement<any, any> },
@@ -68,11 +72,11 @@ export const AboutDialog = (props: {}) => {
             maxWidth={'sm'}
             fullWidth={true}
             TransitionComponent={Transition as any}
-            aria-labelledby="about-dialog-slide-title"
+            aria-labelledby="about-dialog-slide-title"//About Web MiniDisc Pro
         >
-            <DialogTitle id="about-dialog-slide-title">About Web MiniDisc Pro</DialogTitle>
+            <DialogTitle id="about-dialog-slide-title">{t['about-dialog.tsx']}</DialogTitle>
             <DialogContent>
-                <DialogContentText>Web MiniDisc Pro uses</DialogContentText>
+                <DialogContentText>Web MiniDisc Pro {t['uses']}</DialogContentText>
                 <div className={classes.reflinks}>
                     <ul>
                         <li>
@@ -83,13 +87,13 @@ export const AboutDialog = (props: {}) => {
                             <Link rel="noopener noreferrer" href="https://github.com/ffmpegjs/FFmpeg" target="_blank">
                                 ffmpegjs
                             </Link>
-                            , to read your audio files (wav, mp3, ogg, mp4, etc...).
+                            , {t['aufil']} (wav, mp3, ogg, mp4, etc...).
                         </li>
                         <li>
                             <Link rel="noopener noreferrer" href="https://github.com/dcherednik/atracdenc/" target="_blank">
                                 Atracdenc
                             </Link>
-                            , to support atrac3 encoding (lp2, lp4 audio formats).
+                            , to support atrac3 encoding (MD-LP LP2 &amp; LP4 audio formats).
                         </li>
                         <li>
                             <Link rel="noopener noreferrer" href="https://emscripten.org/" target="_blank">
@@ -153,7 +157,7 @@ export const AboutDialog = (props: {}) => {
                             </Link>
                         </li>
                     </ul>
-                    <DialogContentText>Disclaimers:</DialogContentText>
+                    <DialogContentText>Disclaimers</DialogContentText>
                     <ul className={classes.nobul}>
                         <li>
                             This version is under visual construction, if you experience any <br />
@@ -162,18 +166,9 @@ export const AboutDialog = (props: {}) => {
                         </li>
                     </ul>
                 </div>
-                <Typography>
-                    Addition exclamations: This version is primarily built from technical updates implemented by Asivery, Sir68K &amp; others
-                    to the existing core of Stefano Brilli's original authentic work, for the express purpose of extending it with added
-                    functionalities that permit among other things correct operation in combination with the Sony MZ-RH1 for transferring
-                    audio tracks back to the pc as well as overall stability enhancements for all other compatible NetMD players/recorders.<br />
-                    <br />While the repo I, DaveFlash, maintain for this live version will only include the needed additional superficial
-                    enhancements to wordings, dialogs, UI/UX, look-and-feel and the underlying html and css code for the purpose of making
-                    it more user-friendly for everyone, most parts of the technical side of things is explicitly outside of my purview.
-                    Links to all authors of this software are included in the copyright section on the bottom of the site
-                </Typography>
+                <DialogContentText>Version info</DialogContentText>
                 <DialogContentText style={{ textAlign: 'center', fontSize: 13 }}>
-                    Version 1.3.6 <i>b</i>#{GIT_HASH} {(GIT_DIFF as any) === '0' ? '' : `(${GIT_DIFF} diff-lines ahead)`} built on {BUILD_DATE}
+                    Version 1.4.2 #{GIT_HASH} {(GIT_DIFF as any) === '0' ? '' : `(${GIT_DIFF} diff-lines ahead)`} <br /> built on {BUILD_DATE}
                 </DialogContentText>
             </DialogContent>
             <DialogActions>
@@ -182,3 +177,11 @@ export const AboutDialog = (props: {}) => {
         </Dialog>
     );
 };
+/*exclamations: This version is primarily built from technical updates implemented by Asivery, Sir68K &amp; others
+                    to the existing core of Stefano Brilli's original authentic work, for the express purpose of extending it with added
+                    functionalities that permit among other things correct operation in combination with the Sony MZ-RH1 for transferring
+                    audio tracks back to the pc as well as overall stability enhancements for all other compatible NetMD players/recorders.<br />
+                    <br />While the repo I, DaveFlash, maintain for this live version will only include the needed additional superficial
+                    enhancements to wordings, dialogs, UI/UX, look-and-feel and the underlying html and css code for the purpose of making
+                    it more user-friendly for everyone, most parts of the technical side of things is explicitly outside of my purview.
+                    Links to all authors of this software are included in the copyright section on the bottom of the site*/

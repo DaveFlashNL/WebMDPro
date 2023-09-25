@@ -69,18 +69,22 @@ export const DumpDialog = ({
         [setInputDeviceId, isCapableOfDownload]
     );
 
-    const handleStartTransfer = useCallback(() => {
-        if (isCapableOfDownload) {
-            if (isExploitDownload) {
-                dispatch(exploitDownloadTracks(trackIndexes));
-            } else {
-                dispatch(downloadTracks(trackIndexes));
-            }
-        } else {
-            dispatch(recordTracks(trackIndexes, inputDeviceId));
-        }
+    const handleStartRecord = useCallback(() => {
+        dispatch(recordTracks(trackIndexes, inputDeviceId));
         handleClose();
-    }, [trackIndexes, inputDeviceId, dispatch, handleClose, isCapableOfDownload, isExploitDownload]);
+    }, [dispatch, handleClose, inputDeviceId, trackIndexes]);
+
+    const handleStartTransfer = useCallback(
+        (convertToWav: boolean = false) => {
+            if (isExploitDownload) {
+                dispatch(exploitDownloadTracks(trackIndexes, convertToWav));
+            } else {
+                dispatch(downloadTracks(trackIndexes, convertToWav));
+            }
+            handleClose();
+        },
+        [trackIndexes, dispatch, handleClose, isExploitDownload]
+    );
 
     const vintageMode = useShallowEqualSelector(state => state.appState.vintageMode);
 
@@ -116,22 +120,22 @@ export const DumpDialog = ({
                         {isExploitDownload ? (
                             <React.Fragment>
                                 <Typography component="p" variant="body2">
-                                    You have enabled the NetMD exploit, tracks will be ripped from the inserted minidisc just like a CD and download via USB.
+                                    You have enabled the NetMD exploits so tracks will be ripped from the inserted minidisc just like a CD and download via your browser.
                                 </Typography>
                                 <Typography component="p" variant="body2">
-                                    Please keep in mind that tracks download "as is" in a container file, use an ffmpeg-based player, such as VLC to play them.
+                                    Please keep in mind that tracks download this way will be downloaded "as is" in a container file, use an ffmpeg-based player, such as VLC to play them. Alternatively you can click 'download and convert' to let Web MD Pro do it for you.
                                 </Typography>
                                 <Typography component="p" variant="body2">
-                                    Also, be advised, as this is using an exploit not all devices may be fully compatible nor may such usage be stable across all of the current supported devices.
+                                    Also, be advised, as this uses an exploit, while it's stable and save for most to use, it may not work across all of your devices and devoce firmwares yet. Updates will be made to this when applicable. You may share your firmware and ram and rom files with us if the Web MD says it's not yet compatible for your device. The wiki and discord will have instructions and members you can reach about this.
                                 </Typography>
                             </React.Fragment>
                         ) : (
                             <React.Fragment>
                                 <Typography component="p" variant="body2">
-                                    You're Sony MZ-RH1 support direct ripping of minidiscs via NetMD.  Tracks will download via USB.
+                                    You're Sony MZ-RH1 supports direct ripping of minidiscs via NetMD.  Tracks will download via USB.
                                 </Typography>
                                 <Typography component="p" variant="body2">
-                                    Please keep in mind that tracks download "as is" in a container file, use an ffmpeg-based player, such as VLC to play them.
+                                    Please keep in mind that tracks download "as is" in a container file, use an ffmpeg-based player, such as VLC to listen to your rips. Alternatively you can click 'download and convert' to let Web MD Pro do it for you.
                                 </Typography>
                             </React.Fragment>
                         )}
@@ -142,9 +146,16 @@ export const DumpDialog = ({
             </DialogContent>
             <DialogActions>
                 <Button onClick={handleClose}>Cancel</Button>
-                <Button onClick={handleStartTransfer} disabled={inputDeviceId === '' && !isCapableOfDownload}>
-                    Start {isCapableOfDownload ? 'Download' : 'Record'}
-                </Button>
+                {isCapableOfDownload ? (
+                    <>
+                        <Button onClick={() => handleStartTransfer(true)}>Download and convert</Button>
+                        <Button onClick={() => handleStartTransfer(false)}>Download</Button>
+                    </>
+                ) : (
+                    <Button onClick={handleStartRecord} disabled={inputDeviceId === ''}>
+                        Start {isCapableOfDownload ? 'Download' : 'Record'}
+                    </Button>
+                )}
             </DialogActions>
         </Dialog>
     );

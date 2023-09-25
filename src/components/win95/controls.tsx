@@ -2,13 +2,13 @@ import React from 'react';
 import { Button, Panel } from 'react95';
 import { belowDesktop } from '../../utils';
 
-import PlayArrowIcon from '@material-ui/icons/PlayArrow';
-import StopIcon from '@material-ui/icons/Stop';
-import SkipNextIcon from '@material-ui/icons/SkipNext';
-import SkipPreviousIcon from '@material-ui/icons/SkipPrevious';
-import PauseIcon from '@material-ui/icons/Pause';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
+import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
+import PauseIcon from '@mui/icons-material/Pause';
 import { makeStyles } from '@material-ui/core/styles';
-import { Capability } from '../../services/netmd';
+import { Capability } from '../../services/interfaces/netmd';
 
 const useStyles = makeStyles(theme => ({
     container: {
@@ -76,10 +76,10 @@ export const W95Controls = (props: {
                         style={
                             props.message && props.lcdScroll > 0
                                 ? {
-                                    animationDuration: `${props.lcdScrollDuration}s`,
-                                    transform: `translate(-${props.lcdScroll}%)`,
-                                    top: 12,
-                                }
+                                      animationDuration: `${props.lcdScrollDuration}s`,
+                                      transform: `translate(-${props.lcdScroll}%)`,
+                                      top: 12,
+                                  }
                                 : { top: 12 }
                         }
                     >

@@ -15,12 +15,11 @@ import {
     List,
     ListItem,
 } from 'react95';
-import { Disc, formatTimeFromFrames } from 'netmd-js';
 import { makeStyles } from '@material-ui/core/styles';
 import { DropzoneRootProps, DropzoneInputProps } from 'react-dropzone';
 import { ThemeContext } from 'styled-components';
 import { Controls } from '../controls';
-import { useShallowEqualSelector } from '../../utils';
+import { formatTimeFromSeconds, useShallowEqualSelector } from '../../utils';
 
 import DeleteIconUrl from '../../images/win95/delete.png';
 import MicIconUrl from '../../images/win95/mic.png';
@@ -39,7 +38,7 @@ import { RecordDialog } from '../record-dialog';
 import { DumpDialog } from '../dump-dialog';
 import { PanicDialog } from '../panic-dialog';
 import { ChangelogDialog } from '../changelog-dialog';
-import { Capability } from '../../services/netmd';
+import { Capability, Disc } from '../../services/interfaces/netmd';
 
 const useStyles = makeStyles((theme: any) => ({
     container: {
@@ -91,7 +90,7 @@ export const W95Main = (props: {
         title: string;
         fullWidthTitle: string;
         group: string | null;
-        duration: string;
+        duration: number;
         encoding: string;
     }[];
     uploadedFiles: File[];
@@ -135,17 +134,15 @@ export const W95Main = (props: {
                         <img alt="minidisc" src={MDIconUrl} style={{ width: 32, marginLeft: 10 }} />
                         {props.disc !== null ? (
                             <Tooltip
-                                text={`${formatTimeFromFrames(props.disc.left * 2, false)} in LP2 or ${formatTimeFromFrames(
-                                    props.disc.left * 4,
-                                    false
+                                text={`${formatTimeFromSeconds(props.disc.left * 2)} in LP2 or ${formatTimeFromSeconds(
+                                    props.disc.left * 4
                                 )} in LP4`}
                                 enterDelay={100}
                                 leaveDelay={500}
                             >
-                                <div className={classes.toolbarItem}>{`${formatTimeFromFrames(
-                                    props.disc.left,
-                                    false
-                                )} left of ${formatTimeFromFrames(props.disc.total, false)} `}</div>
+                                <div className={classes.toolbarItem}>{`${formatTimeFromSeconds(
+                                    props.disc.left
+                                )} left of ${formatTimeFromSeconds(props.disc.total)} `}</div>
                             </Tooltip>
                         ) : null}
                     </>
@@ -227,7 +224,7 @@ export const W95Main = (props: {
                                         <TableDataCell style={{ textAlign: 'right', width: '20%' }}>
                                             <span>{track.encoding}</span>
                                             &nbsp;
-                                            <span>{track.duration}</span>
+                                            <span>{formatTimeFromSeconds(track.duration)}</span>
                                         </TableDataCell>
                                     </CustomTableRow>
                                 ))}

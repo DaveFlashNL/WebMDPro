@@ -10,3 +10,17 @@ declare module 'react95/dist/themes/original';
 declare module 'react95/dist/fonts/ms_sans_serif.woff2';
 declare module 'react95/dist/fonts/ms_sans_serif_bold.woff2';
 declare module 'jconv';
+
+interface ArrayBuffer {
+    /**
+     * A fake property to make TypeScript distinguish between ArrayBuffer and (U)int*Array
+     */
+    notTypedArray: undefined;
+}
+
+interface SharedArrayBuffer {
+    /**
+     * A fake property to make TypeScript distinguish between SharedArrayBuffer and (U)int*Array
+     */
+    notTypedArray: undefined;
+}

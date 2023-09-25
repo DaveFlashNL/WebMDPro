@@ -1,0 +1,105 @@
+{
+    "about": {
+        "about-dialog.tsx": "Over Web MiniDisc Pro",
+        "uses": "gebruikt",
+        "aufil": "om audiobestanden te lezen"
+    },
+    "app": {
+        "app.tsx": "app"
+    },
+    "changelog-dialog": {
+        "changelog-dialog.tsx": "Wijzigingen in Web Minidisc Pro"
+    },
+    "controls": {
+        "controls.tsx": "bedieningen"
+    },
+    "convert-dialog": {
+        "convert-dialog.tsx": "Converteren scherm"
+    },
+    "dump-dialog": {
+        "dump-dialog.tsx": "dumpen"
+    },
+    "error-dialog": {
+        "error-dialog.tsx": "foutenscherm"
+    },
+    "line-in-helpers": {
+        "line-in-helpers.tsx": "Lijn-in hulp"
+    },
+    "main-rows": {
+        "main-rows.tsx": "Hoofdrijen"
+    },
+    "main": {
+        "main.tsx": "Hoofdscherm"
+    },
+    "other-device-dialog": {
+        "other-device-dialog.tsx": "andere apparaten scherm"
+    },
+    "panic-dialog": {
+        "panic-dialog.tsx": "Paniekscherm"
+    },
+    "record-dialog": {
+        "record-dialog.tsx": "Opnamescherm"
+    },
+    "rename-dialog": {
+        "rename-dialog.tsx": "Metadatascherm"
+    },
+    "settings-dialog": {
+        "settings-dialog.tsx": "Instellingenscherm"
+    },
+    "song-recognition-dialog": {
+        "song-recognition-dialog.tsx": "Shazamscherm"
+    },
+    "song-recognition-progress-dialog": {
+        "song-recognition-progress-dialog.tsx": "Shazamvoortgangsscherm"
+    },
+    "split-button": {
+        "split-button.tsx": "Tracksplitsen knop"
+    },
+    "topmenu": {
+        "topmenu.tsx": "Hoofdmenu"
+    },
+    "upload-dialog": {
+        "upload-dialog.tsx": "Uploadscherm"
+    },
+    "welcome": {
+        "welcome.tsx": "Welkomescherm",
+        "cstmdev": "Apparaat toevoegen",
+        "delete": "verwijder",
+        "costdev": "Gebruikersapparaat toevoegen",
+        "tagline": "Brengt NetMD naar het web",
+        "pressconn": "Klik om met een NetMD-apparaat te verbinden",
+        "browser": "Deze browser wordt niet ondersteund",
+        "learnwhy": "Ontdek waarom",
+        "trychrome": "Gebruik",
+        "instead": "of een op Chromium-gebaseerde browser",
+        "whyspprt": "Web MiniDisc Pro vereist een browser met ondersteuning voor zowel",
+        "and": "en",
+        "listreasonA": "WebUSB is nodig om een NetMD apparaat via de USB verbinding te besturen.",
+        "listreasonB": "WebAssembly wordt gebruikt om muziek om te zetten naar het MiniDisc formaat.",
+        "supfaq": "Support en FAQ (Engels)"
+    },
+    "cstmdhdr": "Voeg aangepast apparaat toe",
+    "condev": "Aangesloten: ",
+    "loadin": "laden...",
+    "welcometag": "Brengt NetMD naar het web",
+    "connbtn": "Verbinden",
+    "remoteconn": "Verbinden met",
+    "remotemsg": "Verbind op afstand met een NetMD-apparaat via ",
+    "mdlpinf": "Deze badge geeft zowel de beschikbare opnameruimte op de disc als de modi voor elke gegeven track op de disc aan voor tracks die hieronder staan afgebeeld.",
+    "mdlp": "Minidisc \"Long Play\", introduced in September 2000, is a new encoding method for audio on MiniDisc's that offers two modes: one gives 160 minutes stereo (\"LP2\"), the second gives 320 minutes stereo (\"LP4\"). Only players labelled with the same mark such as this will playback tracks encoded in MDLP-modes, on other plays they plaback as silence.",
+    "mdlp2": "d",
+    "mdlp4": "LP4 (also part of MDLP) quadruples the available recording time. For both LP2 and LP4 however, you need an MDLP-capable unit to play such tracks.",
+    "nodisc": "Geen disc geladen",
+    "timemsg": "Bespeelbare tijd op",
+    "of": "voor",
+    "notitle": "Naamloze MD",
+    "selectedtxt": "geselecteerd",
+    "frname": "Vriendelijke naam",
+    "srvaddr": "Serveradres",
+    "copyright": {
+        "txt1": " (origineel), ",
+        "txt2": ", deze fork van ",
+        "txt3": ", met trots gehost op",
+        "txt4": " in de EU. Alle rechten voorbehouden. © "
+    }
+}

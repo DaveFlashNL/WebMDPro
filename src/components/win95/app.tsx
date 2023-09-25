@@ -14,7 +14,7 @@ import { useDispatch } from 'react-redux';
 
 import CDPlayerIconUrl from '../../images/win95/cdplayer.png';
 import { WindowCloseIcon } from './common';
-import { Capability } from '../../services/netmd';
+import { Capability } from '../../services/interfaces/netmd';
 
 const GlobalStyles = createGlobalStyle`
 ${styleReset}
@@ -84,7 +84,7 @@ export const W95App = () => {
     }, [isMenuOpen, setMenuOpen]);
 
     const handleHelpClick = useCallback(() => {
-        window.open('https://www.minidisc.wiki/guides/start', '_blank');
+        window.open('https://github.com/cybercase/webminidisc/wiki/Support-and-FAQ', '_blank');
     }, []);
 
     const currentTheme = original;
@@ -103,7 +103,7 @@ export const W95App = () => {
                 <Window className={classes.window}>
                     <WindowHeader style={{ display: 'flex', alignItems: 'center' }}>
                         <img alt="CD Player" src={CDPlayerIconUrl} />
-                        <span style={{ flex: '1 1 auto', marginLeft: '4px' }}>Web MiniDisc 95</span>
+                        <span style={{ flex: '1 1 auto', marginLeft: '4px' }}>Web MiniDisc Pro</span>
                         {mainView === 'MAIN' ? (
                             <Button onClick={handleExit}>
                                 <WindowCloseIcon />

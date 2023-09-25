@@ -1,4 +1,4 @@
-import { downloadBlob, getPublicPathFor } from '../utils';
+import { downloadBlob, getPublicPathFor } from '../../utils';
 import Recorder from 'recorderjs';
 
 export class MediaRecorderService {

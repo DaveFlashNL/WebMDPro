@@ -1,12 +1,15 @@
 {
   "name": "webmd-pro",
-  "version": "1.3.6",
-  "private": false,
+  "version": "1.4.2",
+  "private": true,
   "dependencies": {
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
     "@ffmpeg/ffmpeg": "0.6.1",
     "@material-ui/core": "^4.11.2",
-    "@material-ui/icons": "^4.11.2",
     "@material-ui/lab": "^4.0.0-alpha.57",
+    "@mui/icons-material": "^5.14.3",
+    "@mui/material": "^5.14.3",
     "@reduxjs/toolkit": "^1.5.0",
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
@@ -19,17 +22,18 @@
     "@types/styled-components": "^5.1.7",
     "@types/w3c-web-usb": "^1.0.4",
     "clsx": "^1.1.1",
+    "himd-js": "^0.1.10",
     "husky": "^8.0.1",
     "jconv": "^0.1.5",
+    "jszip": "^3.10.1",
     "lint-staged": "^10.5.3",
     "music-metadata-browser": "^2.5.9",
-    "netmd-exploits": "^0.4.3",
-    "netmd-js": "^4.1.0",
+    "netmd-exploits": "^0.5.4",
+    "netmd-js": "^4.1.4",
     "netmd-tocmanip": "^0.1.5",
     "prettier": "^1.19.1",
     "react": "^16.14.0",
     "react-beautiful-dnd": "^13.1.0",
-    "react-collapsed": "^3.5.0",
     "react-dom": "^16.14.0",
     "react-dropzone": "^10.2.2",
     "react-redux": "^7.2.2",
@@ -44,6 +48,7 @@
   },
   "homepage": "https://webmd.pro/",
   "scripts": {
+    "analyze": "source-map-explorer 'build/static/js/*.js'",
     "start": "npm run update-version && react-scripts start",
     "build": "npm run update-version && react-scripts build && bash -c 'cat public/extra-service-worker.js build/service-worker.js > build/final-service-worker.js'",
     "test": "react-scripts test",
@@ -66,10 +71,22 @@
       "last 2 chrome version"
     ]
   },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,ts,tsx,json,scss,md}": [
+      "prettier --check"
+    ]
+  },
   "devDependencies": {
     "@types/dom-mediacapture-record": "^1.0.7",
     "@types/react-beautiful-dnd": "^13.1.1",
     "@types/wicg-mediasession": "^1.1.3",
-    "async-mutex": "^0.2.6"
+    "async-mutex": "^0.2.6",
+    "gh-pages": "^2.2.0",
+    "source-map-explorer": "^2.5.3"
   }
 }

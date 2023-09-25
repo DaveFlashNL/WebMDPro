@@ -1,6 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { makeStyles } from '@material-ui/core';
-import { Button, Table, TableBody, TableCell, TableRow, TextField, Tooltip, Typography } from '@material-ui/core';
+import Button from '@material-ui/core/Button';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableRow from '@material-ui/core/TableRow';
+import TextField from '@material-ui/core/TextField';
+import Tooltip from '@material-ui/core/Tooltip';
+import Typography from '@material-ui/core/Typography';
 import { actions as factoryFragmentModeDialogActions } from '../../redux/factory/factory-fragment-mode-edit-dialog-feature';
 import { useDispatch } from 'react-redux';
 import { batchActions } from 'redux-batched-actions';
@@ -162,10 +169,10 @@ export const ComponentOrDisabled = ({ children, disabled }: { children: JSX.Elem
 };
 
 export const LinkSelector = ({ value, setValue }: { value: number; setValue: (newValue: number) => void }) => {
-    return <LabeledSelector value={value} setValue={setValue} name="Link" />;
+    return <LabeledNumberInput value={value} setValue={setValue} name="Link" />;
 };
 
-export const LabeledSelector = ({
+export const LabeledNumberInput = ({
     value,
     setValue,
     name,
@@ -178,20 +185,29 @@ export const LabeledSelector = ({
 }) => {
     const classes = useStyles();
     const maxValue = useMemo(() => Math.pow(2, 8 * (bytes ?? 1)) - 1, [bytes]);
+
+    const [localValue, setLocalValue] = useState<typeof value>(value);
+    useEffect(() => setLocalValue(value), [value]);
+
     const handleChange = useCallback(
         (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
             const newVal = parseInt(event.target.value || '0');
             if (isNaN(newVal) || newVal < 0 || newVal > maxValue) return;
-            setValue(newVal);
+            setLocalValue(newVal);
         },
-        [setValue, maxValue]
+        [setLocalValue, maxValue]
     );
+    const handleFocusLost = useCallback(() => {
+        if (localValue !== value) {
+            setValue(localValue);
+        }
+    }, [localValue, value, setValue]);
     return (
         <div className={classes.editedFieldDiv}>
             <Typography variant="body2" className={classes.editedFieldName}>
                 {name}:
             </Typography>
-            <TextField value={value} onChange={handleChange} className={classes.linkInput} />
+            <TextField value={localValue} onChange={handleChange} onBlur={handleFocusLost} className={classes.linkInput} />
         </div>
     );
 };

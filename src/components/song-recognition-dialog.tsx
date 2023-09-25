@@ -4,6 +4,7 @@ import { belowDesktop, useShallowEqualSelector, forAnyDesktop, forWideDesktop } 
 
 import { actions as songRecognitionDialogActions } from '../redux/song-recognition-dialog-feature';
 import { recognizeTracks, renameTrack } from '../redux/actions';
+import { actions as renameDialogActions, RenameType } from '../redux/rename-dialog-feature';
 
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
@@ -21,11 +22,16 @@ import Select from '@material-ui/core/Select';
 import Input from '@material-ui/core/Input';
 import MenuItem from '@material-ui/core/MenuItem';
 import Checkbox from '@material-ui/core/Checkbox';
-import { sanitizeFullWidthTitle, sanitizeHalfWidthTitle } from 'netmd-js/dist/utils';
-import { Link, Table, TableBody, TableCell, TableHead, TableRow } from '@material-ui/core';
-import { Capability } from '../services/netmd';
+import Link from '@material-ui/core/Link';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import { Capability } from '../services/interfaces/netmd';
 import serviceRegistry from '../services/registry';
 import { LineInDeviceSelect } from './line-in-helpers';
+import { batchActions } from 'redux-batched-actions';
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement<any, any> },
@@ -115,17 +121,19 @@ const useStyles = makeStyles(theme => ({
     noFetch: {
         color: theme.palette.error.main,
     },
+    originalUnsanitizedName: {
+        marginLeft: theme.spacing(3),
+        fontStyle: 'italic',
+    },
 }));
 
-export const SongRecognitionDialog = (props: { trackIndexes: number[] }) => {
+export const SongRecognitionDialog = (props: {}) => {
     const dispatch = useDispatch();
     const classes = useStyles();
 
     const { visible, titles, titleFormat, importMethod } = useShallowEqualSelector(state => state.songRecognitionDialog);
     const { fullWidthSupport } = useShallowEqualSelector(state => state.appState);
     const { deviceCapabilities, disc } = useShallowEqualSelector(state => state.main);
-
-    const [selected, setSelected] = useState<number[]>([]);
 
     // Line in section
     const [inputDeviceId, setInputDeviceId] = useState<string>('');
@@ -140,8 +148,9 @@ export const SongRecognitionDialog = (props: { trackIndexes: number[] }) => {
     );
 
     const canApplyTitles = useMemo(() => {
-        return titles.filter(e => selected.includes(e.index)).every(e => e.alreadyRecognized) && selected.length > 0;
-    }, [titles, selected]);
+        const allSelected = titles.filter(e => e.selectedToRecognize);
+        return allSelected.every(e => e.alreadyRecognized) && allSelected.length > 0;
+    }, [titles]);
 
     const stopAudioInput = useCallback(() => {
         setInputDeviceId('');
@@ -175,95 +184,115 @@ export const SongRecognitionDialog = (props: { trackIndexes: number[] }) => {
         dispatch(
             renameTrack(
                 ...titles
-                    .filter(e => e.alreadyRecognized && selected.includes(e.index) && !e.recognizeFail)
+                    .filter(e => e.alreadyRecognized && e.selectedToRecognize && !e.recognizeFail)
                     .map(e => ({ index: e.index, newName: e.newTitle, newFullWidthName: e.newFullWidthTitle }))
             )
         );
-    }, [dispatch, handleClose, titles, selected]);
+    }, [dispatch, handleClose, titles]);
 
     const handleRecognize = useCallback(() => {
         dispatch(
-            recognizeTracks(
-                titles.filter(e => selected.includes(e.index) && !e.alreadyRecognized).map(e => e.index),
-                importMethod,
-                {
-                    deviceId: inputDeviceId,
-                }
-            )
+            recognizeTracks(titles, importMethod, {
+                deviceId: inputDeviceId,
+            })
         );
-    }, [dispatch, titles, importMethod, selected, inputDeviceId]);
+    }, [dispatch, titles, importMethod, inputDeviceId]);
 
     const handleToggleRecognize = useCallback(
         (i: number) => {
-            setSelected(old => {
-                let newArr = [...old];
-                if (old.includes(i)) {
-                    newArr.splice(old.indexOf(i), 1);
-                } else {
-                    newArr.push(i);
-                }
-                return newArr;
-            });
+            dispatch(
+                songRecognitionDialogActions.setTitles(
+                    titles.map(e => {
+                        return {
+                            ...e,
+                            selectedToRecognize: e.index === i ? !e.selectedToRecognize : e.selectedToRecognize,
+                        };
+                    })
+                )
+            );
         },
-        [setSelected]
+        [dispatch, titles]
     );
 
     const handleToggleSelectAll = useCallback(() => {
-        setSelected(old => {
-            if (old.length > titles.length / 2) {
-                return [];
-            } else {
-                return Array(titles.length)
-                    .fill(0)
-                    .map((_, i) => i);
-            }
-        });
-    }, [titles, setSelected]);
+        const selectedTitles = titles.filter(e => e.selectedToRecognize);
+        dispatch(
+            songRecognitionDialogActions.setTitles(
+                titles.map(e => {
+                    return {
+                        ...e,
+                        selectedToRecognize: selectedTitles.length <= titles.length / 2,
+                    };
+                })
+            )
+        );
+    }, [titles, dispatch]);
 
-    useEffect(() => {
-        setSelected(props.trackIndexes);
-    }, [props.trackIndexes, setSelected]);
+    const handleOpenRenameDialog = useCallback(
+        (index: number) => {
+            let track = titles[index];
+            dispatch(
+                batchActions([
+                    renameDialogActions.setVisible(true),
+                    renameDialogActions.setCurrentName(track.newTitle),
+                    renameDialogActions.setCurrentFullWidthName(track.newFullWidthTitle),
+                    renameDialogActions.setIndex(index),
+                    renameDialogActions.setRenameType(RenameType.SONG_RECOGNITION_TITLE),
+                ])
+            );
+        },
+        [titles, dispatch]
+    );
 
     useEffect(() => {
         let changed = false;
         let newArray = [...titles];
         for (let i = 0; i < newArray.length; i++) {
             const title = newArray[i];
+            const minidiscSpec = serviceRegistry.netmdSpec!;
 
+            let halfWidth, fullWidth;
             let newRawTitle;
-            switch (titleFormat) {
-                case 'title': {
-                    newRawTitle = title.songTitle;
-                    break;
+            if (title.manualOverrideNewTitle || title.manualOverrideNewFullWidthTitle) {
+                newRawTitle = title.manualOverrideNewTitle;
+                halfWidth = minidiscSpec.sanitizeHalfWidthTitle(title.manualOverrideNewTitle);
+                fullWidth = minidiscSpec.sanitizeFullWidthTitle(title.manualOverrideNewFullWidthTitle);
+            } else {
+                switch (titleFormat) {
+                    case 'title': {
+                        newRawTitle = title.songTitle;
+                        break;
+                    }
+                    case 'artist-title': {
+                        newRawTitle = `${title.songArtist} - ${title.songTitle}`;
+                        break;
+                    }
+                    case 'title-artist': {
+                        newRawTitle = `${title.songTitle} - ${title.songArtist}`;
+                        break;
+                    }
+                    case 'album-title': {
+                        newRawTitle = `${title.songAlbum} - ${title.songTitle}`;
+                        break;
+                    }
+                    case 'artist-album-title': {
+                        newRawTitle = `${title.songArtist} - ${title.songAlbum} - ${title.songTitle}`;
+                        break;
+                    }
                 }
-                case 'artist-title': {
-                    newRawTitle = `${title.songArtist} - ${title.songTitle}`;
-                    break;
-                }
-                case 'title-artist': {
-                    newRawTitle = `${title.songTitle} - ${title.songArtist}`;
-                    break;
-                }
-                case 'album-title': {
-                    newRawTitle = `${title.songAlbum} - ${title.songTitle}`;
-                    break;
-                }
-                case 'artist-album-title': {
-                    newRawTitle = `${title.songArtist} - ${title.songAlbum} - ${title.songTitle}`;
-                    break;
-                }
+
+                halfWidth = minidiscSpec.sanitizeHalfWidthTitle(newRawTitle);
+                fullWidth = minidiscSpec.sanitizeFullWidthTitle(newRawTitle);
             }
 
-            let halfWidth = sanitizeHalfWidthTitle(newRawTitle);
-            let fullWidth = sanitizeFullWidthTitle(newRawTitle);
-
-            if (sanitizeHalfWidthTitle(fullWidth) === halfWidth) fullWidth = ''; // Save space - if the titles are the same, don't write full width
+            if (minidiscSpec.sanitizeHalfWidthTitle(fullWidth) === halfWidth) fullWidth = ''; // Save space - if the titles are the same, don't write full width
 
             changed = changed || title.newFullWidthTitle !== fullWidth || title.newTitle !== halfWidth;
             newArray[i] = {
                 ...newArray[i],
                 newFullWidthTitle: fullWidth,
                 newTitle: halfWidth,
+                unsanitizedTitle: halfWidth === newRawTitle ? null : newRawTitle,
             };
         }
 
@@ -344,7 +373,7 @@ export const SongRecognitionDialog = (props: { trackIndexes: number[] }) => {
                     <TableHead>
                         <TableRow>
                             <TableCell className={classes.checkmarkCell}>
-                                <Checkbox checked={titles.length === selected.length} onClick={handleToggleSelectAll} />
+                                <Checkbox checked={titles.every(e => e.selectedToRecognize)} onClick={handleToggleSelectAll} />
                             </TableCell>
                             <TableCell className={classes.indexCell}>#</TableCell>
                             <TableCell>Original Title</TableCell>
@@ -355,7 +384,7 @@ export const SongRecognitionDialog = (props: { trackIndexes: number[] }) => {
                         {titles.map(title => (
                             <TableRow hover key={`title-${title.index}`} onClick={e => handleToggleRecognize(title.index)}>
                                 <TableCell>
-                                    <Checkbox checked={selected.includes(title.index)} />
+                                    <Checkbox checked={title.selectedToRecognize} />
                                 </TableCell>
                                 <TableCell>
                                     <span className={classes.trackIndex}>{title.index + 1}</span>
@@ -365,6 +394,7 @@ export const SongRecognitionDialog = (props: { trackIndexes: number[] }) => {
                                         (title.originalFullWidthTitle ? ` / ${title.originalFullWidthTitle}` : '')}
                                 </TableCell>
                                 <TableCell
+                                    onDoubleClick={() => handleOpenRenameDialog(title.index)}
                                     className={
                                         title.recognizeFail ? classes.recognizeFail : !title.alreadyRecognized ? classes.greyedOut : ``
                                     }
@@ -375,6 +405,9 @@ export const SongRecognitionDialog = (props: { trackIndexes: number[] }) => {
                                             ? 'Not recognized'
                                             : (title.newTitle || 'No Title') +
                                             (title.newFullWidthTitle && fullWidthSupport ? ` / ${title.newFullWidthTitle}` : '')}
+                                    {title.unsanitizedTitle && (
+                                        <span className={classes.originalUnsanitizedName}>[{title.unsanitizedTitle}]</span>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -387,7 +420,7 @@ export const SongRecognitionDialog = (props: { trackIndexes: number[] }) => {
                     onClick={handleRecognize}
                     disabled={
                         canApplyTitles ||
-                        selected.length === 0 ||
+                        !titles.some(e => e.selectedToRecognize) ||
                         (importMethod === 'line-in' && inputDeviceId === '') ||
                         window.native?.unrestrictedFetchJSON === undefined
                     }

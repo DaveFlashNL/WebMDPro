@@ -1,24 +1,26 @@
 import React, { useCallback } from 'react';
 import clsx from 'clsx';
 
-import { EncodingName } from '../utils';
-
-import { formatTimeFromFrames, Track, Group, Channels } from 'netmd-js';
-
 import { makeStyles } from '@material-ui/core/styles';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
+import Tooltip from '@material-ui/core/Tooltip';
+
 import * as BadgeImpl from '@material-ui/core/Badge/Badge';
 
-import DragIndicator from '@material-ui/icons/DragIndicator';
-import PlayArrowIcon from '@material-ui/icons/PlayArrow';
-import PauseIcon from '@material-ui/icons/Pause';
+import DragIndicator from '@mui/icons-material/DragIndicator';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
 import IconButton from '@material-ui/core/IconButton';
-import FolderIcon from '@material-ui/icons/Folder';
-import DeleteIcon from '@material-ui/icons/Delete';
+import FolderIcon from '@mui/icons-material/Folder';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 import { DraggableProvided } from 'react-beautiful-dnd';
-import { Capability } from '../services/netmd';
+import { Capability, Track, Group } from '../services/interfaces/netmd';
+import { formatTimeFromSeconds, secondsToNormal } from '../utils';
+
+import serviceRegistry from '../services/registry';
+
 
 const useStyles = makeStyles(theme => ({
     currentTrackRow: {
@@ -39,6 +41,7 @@ const useStyles = makeStyles(theme => ({
         display: 'none',
     },
     trackRow: {
+        userSelect: 'none',
         '&:hover': {
             '& $playButtonInTrackList': {
                 display: 'inline-flex',
@@ -113,6 +116,7 @@ const useStyles = makeStyles(theme => ({
     },
     groupFolderIcon: {},
     groupHeadRow: {
+        userSelect: 'none',
         '&:hover': {
             '& $deleteGroupButton': {
                 display: 'inline-flex',
@@ -129,6 +133,7 @@ interface TrackRowProps {
     inGroup: boolean;
     isSelected: boolean;
     trackStatus: 'playing' | 'paused' | 'none';
+    isHimdTrack: boolean;
     draggableProvided: DraggableProvided;
     onSelect: (event: React.MouseEvent, trackIdx: number) => void;
     onRename: (event: React.MouseEvent, trackIdx: number) => void;
@@ -142,6 +147,7 @@ export function TrackRow({
     isSelected,
     draggableProvided,
     trackStatus,
+    isHimdTrack,
     onSelect,
     onRename,
     onTogglePlayPause,
@@ -203,12 +209,26 @@ export function TrackRow({
                 {track.fullWidthTitle ? `${track.fullWidthTitle} / ` : ``}
                 {track.title || `No Title`}
             </TableCell>
+            {isHimdTrack && (
+                <>
+                    <TableCell className={classes.titleCell} title={track.album ?? ''}>
+                        {track.album || `No Album`}
+                    </TableCell>
+                    <TableCell className={classes.titleCell} title={track.artist ?? ''}>
+                        {track.artist || `No Artist`}
+                    </TableCell>
+                </>
+            )}
             <TableCell align="right" className={classes.durationCell}>
-                {EncodingName[track.encoding] === 'SP' && track.channel === Channels.mono && (
-                    <span className={classes.channelBadge}>MONO</span>
+                {track.encoding.codec === 'SP' && track.channel === 1 && <span className={classes.channelBadge}>MONO</span>}
+                {track.encoding.bitrate ? (
+                    <Tooltip title={`${track.encoding.bitrate!} kbps`}>
+                        <span className={classes.formatBadge}>{track.encoding.codec}</span>
+                    </Tooltip>
+                ) : (
+                    <span className={classes.formatBadge}>{track.encoding.codec}</span>
                 )}
-                <span className={classes.formatBadge}>{EncodingName[track.encoding]}</span>
-                <span className={classes.durationCellTime}>{formatTimeFromFrames(track.duration, false)}</span>
+                <span className={classes.durationCellTime}>{formatTimeFromSeconds(track.duration)}</span>
             </TableCell>
         </TableRow>
     );
@@ -216,6 +236,7 @@ export function TrackRow({
 
 interface GroupRowProps {
     group: Group;
+    usesHimdTracks?: boolean;
     onRename: (event: React.MouseEvent, groupIdx: number) => void;
     onDelete: (event: React.MouseEvent, groupIdx: number) => void;
     onSelect: (event: React.MouseEvent, groupIdx: number) => void;
@@ -223,7 +244,7 @@ interface GroupRowProps {
     isSelected: boolean;
 }
 
-export function GroupRow({ group, onRename, onDelete, isCapable, onSelect, isSelected }: GroupRowProps) {
+export function GroupRow({ group, usesHimdTracks, onRename, onDelete, isCapable, onSelect, isSelected }: GroupRowProps) {
     const classes = useStyles();
 
     const handleDelete = useCallback((event: React.MouseEvent) => isCapable(Capability.metadataEdit) && onDelete(event, group.index), [
@@ -247,7 +268,7 @@ export function GroupRow({ group, onRename, onDelete, isCapable, onSelect, isSel
         >
             <TableCell className={classes.dragHandleEmpty}></TableCell>
             <TableCell className={classes.indexCell}>
-                <FolderIcon className={clsx(classes.controlButtonInTrackCommon, classes.groupFolderIcon)} />
+                <FolderIcon className={clsx(classes.controlButtonInTrackCommon, classes.groupFolderIcon)} fontSize="inherit" />
                 <IconButton
                     aria-label="delete"
                     className={clsx(classes.controlButtonInTrackCommon, classes.deleteGroupButton)}
@@ -261,14 +282,46 @@ export function GroupRow({ group, onRename, onDelete, isCapable, onSelect, isSel
                 {group.fullWidthTitle ? `${group.fullWidthTitle} / ` : ``}
                 {group.title || `No Name`}
             </TableCell>
+            {usesHimdTracks && (
+                <>
+                    <TableCell />
+                    <TableCell />
+                </>
+            )}
             <TableCell align="right" className={classes.durationCellSecondary}>
                 <span className={classes.durationCellTime}>
-                    {formatTimeFromFrames(
-                        group.tracks.map(n => n.duration).reduce((a, b) => a + b),
-                        false
-                    )}
+                    {formatTimeFromSeconds(group.tracks.map(n => n.duration).reduce((a, b) => a + b))}
                 </span>
             </TableCell>
         </TableRow>
     );
+}
+
+export function leftInNondefaultCodecs(timeLeft: number) {
+    const minidiscSpec = serviceRegistry.netmdSpec;
+    if (!minidiscSpec) {
+        return (<></>);
+    }
+    return (
+        <React.Fragment>
+            {minidiscSpec.availableFormats.map(e =>
+                e.codec === minidiscSpec.defaultFormat.codec ? null : (
+                    <React.Fragment key={`total-${e.codec}`}>
+                        <span>{`${secondsToNormal(
+                            minidiscSpec.translateDefaultMeasuringModeTo(
+                                {
+                                    codec: e.codec,
+                                    bitrate: e.availableBitrates
+                                        ? e.defaultBitrate ?? Math.max(...e.availableBitrates)
+                                        : undefined,
+                                },
+                                timeLeft
+                            )
+                        )} in ${e.codec} Mode`}</span>
+                        <br />
+                    </React.Fragment>
+                )
+            )}
+        </React.Fragment>
+    )
 }

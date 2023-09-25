@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import { pair } from '../../redux/actions';
 import { Dispatch } from '@reduxjs/toolkit';
 import { AboutDialog } from '../about-dialog';
-import { NetMDService } from '../../services/netmd';
+import { MinidiscSpec, NetMDService } from '../../services/interfaces/netmd';
 
 const useStyles = makeStyles(theme => ({
     pairingMessage: {
@@ -25,17 +25,18 @@ export interface W95WelcomeProps {
     pairingFailed: boolean;
     pairingMessage: string;
     createService: () => NetMDService;
+    spec: MinidiscSpec;
     connectName: string;
 }
 
 export const W95Welcome = (props: W95WelcomeProps) => {
-    let { dispatch, pairingFailed, pairingMessage, createService, connectName } = props;
+    let { dispatch, pairingFailed, pairingMessage, createService, spec, connectName } = props;
     const classes = useStyles();
     return (
         <>
             <WindowContent className={classes.windowContent}>
                 <p style={{ paddingBottom: 8 }}>Press the button to connect to a NetMD device</p>
-                <Button style={{ minWidth: 90 }} onClick={() => dispatch(pair(createService()))}>
+                <Button style={{ minWidth: 90 }} onClick={() => dispatch(pair(createService(), spec))}>
                     {connectName}
                 </Button>
                 <p style={{ visibility: pairingFailed ? 'visible' : 'hidden' }} className={classes.pairingMessage}>

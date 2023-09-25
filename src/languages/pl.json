@@ -1,5 +1,68 @@
 {
-    "welcometsx": {
+    "about": {
+        "about-dialog.tsx": "Informacje o Web MiniDisc Pro",
+        "uses": "wykorzystuje",
+        "aufil": "czytać pliki audio"
+    },
+    "app": {
+        "app.tsx": "app"
+    },
+    "changelog-dialog": {
+        "changelog-dialog.tsx": "Wijzigingen in Web Minidisc Pro"
+    },
+    "controls": {
+        "controls.tsx": "bedieningen"
+    },
+    "convert-dialog": {
+        "convert-dialog.tsx": "Converteren scherm"
+    },
+    "dump-dialog": {
+        "dump-dialog.tsx": "dumpen"
+    },
+    "error-dialog": {
+        "error-dialog.tsx": "foutenscherm"
+    },
+    "line-in-helpers": {
+        "line-in-helpers.tsx": "Lijn-in hulp"
+    },
+    "main-rows": {
+        "main-rows.tsx": "Hoofdrijen"
+    },
+    "main": {
+        "main.tsx": "Hoofdscherm"
+    },
+    "other-device-dialog": {
+        "other-device-dialog.tsx": "andere apparaten scherm"
+    },
+    "panic-dialog": {
+        "panic-dialog.tsx": "Paniekscherm"
+    },
+    "record-dialog": {
+        "record-dialog.tsx": "Opnamescherm"
+    },
+    "rename-dialog": {
+        "rename-dialog.tsx": "Metadatascherm"
+    },
+    "settings-dialog": {
+        "settings-dialog.tsx": "Instellingenscherm"
+    },
+    "song-recognition-dialog": {
+        "song-recognition-dialog.tsx": "Shazamscherm"
+    },
+    "song-recognition-progress-dialog": {
+        "song-recognition-progress-dialog.tsx": "Shazamvoortgangsscherm"
+    },
+    "split-button": {
+        "split-button.tsx": "Tracksplitsen knop"
+    },
+    "topmenu": {
+        "topmenu.tsx": "Hoofdmenu"
+    },
+    "upload-dialog": {
+        "upload-dialog.tsx": "Uploadscherm"
+    },
+    "welcome": {
+        "welcome.tsx": "dobro dosli",
         "cstmdev": "Dodaj urządzenie niestandardowe",
         "delete": "usuwać",
         "costdev": "Dodaj niestandardowe urządzenie",
@@ -8,6 +71,7 @@
         "browser": "Ta przeglądarka nie jest obsługiwana",
         "learnwhy": "Dowiedz się dlaczego",
         "trychrome": "Spróbuj użyć",
+        "supfaq": "Wsparcie i FAQ (Angielski)",
         "instead": "zamiast",
         "whyspprt": "Web MiniDisc Pro wymaga przeglądarki, która obsługuje oba",
         "and": "i",
@@ -33,12 +97,11 @@
     "remotemsg": "Połącz się ze zdalnym urządzeniem NetMD za pomocą ",
     "selectedtxt": "wybrano",
     "srvaddr": "Adres serwera",
-    "supfaq": "Wsparcie i FAQ (Angielski)",
     "timemsg": "Pozostały czas dostępny",
     "welcometag": "Wprowadza urządzenia NetMD do sieci",
     "copyright": {
-        "txt1": " (oryginał), ten widelec wg ",
-        "txt2": "ja",
+        "txt1": " (oryginał), ",
+        "txt2": ", ten widelec wg ",
         "txt3": ", dumnie gościł na",
         "txt4": " w UE. Wszelkie prawa zastrzeżone. © "
     }

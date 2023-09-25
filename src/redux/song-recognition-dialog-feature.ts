@@ -13,6 +13,7 @@ export interface TitleEntry {
     songAlbum: string;
     songArtist: string;
 
+    selectedToRecognize: boolean;
     alreadyRecognized: boolean;
     recognizeFail: boolean;
 
@@ -20,6 +21,11 @@ export interface TitleEntry {
 
     newTitle: string;
     newFullWidthTitle: string;
+
+    manualOverrideNewTitle: string;
+    manualOverrideNewFullWidthTitle: string;
+
+    unsanitizedTitle: string | null;
 }
 
 export interface SongRecognitionDialogFeature {

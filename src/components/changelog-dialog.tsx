@@ -3,7 +3,6 @@ import { useDispatch } from 'react-redux';
 import { useShallowEqualSelector } from '../utils';
 
 import { actions as appActions } from '../redux/app-feature';
-import { actions as encoderDialogActions } from '../redux/encoder-setup-dialog-feature';
 
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
@@ -11,11 +10,10 @@ import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import Slide from '@material-ui/core/Slide';
 import Button from '@material-ui/core/Button';
+import Link from '@material-ui/core/Link';
 import { makeStyles } from '@material-ui/core/styles';
 import { TransitionProps } from '@material-ui/core/transitions';
 import { W95ChangelogDialog } from './win95/changelog-dialog';
-import { Link } from '@material-ui/core';
-import { batchActions } from 'redux-batched-actions';
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & { children?: React.ReactElement<any, any> },
@@ -70,11 +68,75 @@ export const ChangelogDialog = (props: {}) => {
     }, [dispatch]);
 
     const handleOpenEncoderSettings = useCallback(() => {
-        dispatch(batchActions([encoderDialogActions.setVisible(true), appActions.setMainView('WELCOME')]));
+        dispatch(appActions.showSettingsDialog(true));
     }, [dispatch]);
 
     const content = (
         <React.Fragment>
+            <h2 className={classes.header}>Version 1.4.2</h2>
+            <ul>
+                <li>
+                    Updated to netmd-exploits 0.5.4
+                    <ul>
+                        <li>Added support for SP MONO upload</li>
+                    </ul>
+                </li>
+                <li>
+                    Updated to himd-js 0.1.10
+                    <ul>
+                        <li>Added support for HiMD disc wiping</li>
+                    </ul>
+                </li>
+                <li>Added a disc-protected warning window</li>
+                <li>Added a shortcut to SP Speedup in Homebrew Shortcuts menu</li>
+            </ul>
+            <h2 className={classes.header}>Version 1.4.1</h2>
+            <ul>
+                <li>
+                    Updated to netmd-exploits 0.5.3
+                    <ul>
+                        <li>Added support for Full HiMD mode for Hn1.10A and Hn1.000</li>
+                        <li>Added support for ATRAC download for Hn1.10A and Hn1.000</li>
+                    </ul>
+                </li>
+                <li>Added support for uploading MKA files</li>
+                <li>Fixed MP3 files uploaded to HiMD always being 128kbps</li>
+            </ul>
+            <h2 className={classes.header}>Version 1.4.0</h2>
+            <ul>
+                <li>
+                    Added almost full HiMD support for sony devices, disclaimers apply, see wiki.
+                    <ul>
+                        <li>Added support for HiMD metadata editing</li>
+                        <li>Added support for HiMD ATRAC3 / ATRAC3+ / LPCM / MP3 download</li>
+                        <li>Added support for HiMD MP3 upload</li>
+                    </ul>
+                </li>
+                <li>
+                    Updated to netmd-exploits 0.5.1
+                    <ul>
+                        <li>Added the ability to download ATRAC data from standard MDs using HiMD portables</li>
+                        <li>Added the ability to upload AEA files back to MDs on supported devices</li>
+                        <li>Fixed Tetris on normal Sony portables</li>
+                        <li>(Hopefully) Fixed the L/R channel mismatch bug</li>
+                    </ul>
+                </li>
+                <li>Added homebrew mode shortcuts in the main UI</li>
+                <li>Added progress indicator in tab title for uploading</li>
+                <li>Added an option to archive discs as ZIPs</li>
+                <li>Added an option to auto-convert ripped tracks to WAV</li>
+                <li>Added an option to strip TrProtect from all files via the homebrew mode</li>
+                <li>Added CSV export as part of the archive disc command</li>
+                <li>Added full width title to the upload progress dialog</li>
+                <li>Added a warning for when a mediocre encoder is used</li>
+                <li>Added an option to rename tracks in the song recognition dialog</li>
+                <li>Merged all settings into one dialog</li>
+                <li>Fixed timestamps table in homebrew mode</li>
+                <li>Fixed CSV export missing the first group if all tracks are grouped</li>
+                <li>Fixed disc title editing being available even if disc was write protected</li>
+                <li>Fixed incorrect order when uploading pre-encoded LP2 and LP4 tracks</li>
+                <li>Fixed original title of a song not displaying in the song recognition dialog, if it was sanitized away</li>
+            </ul>
             <h2 className={classes.header}>Version 1.3.6</h2>
             <ul>
                 <li>Changed: web-specific application verbatim is now conditionally hidden from view (Applies only when running in Electron)</li>
@@ -106,7 +168,6 @@ export const ChangelogDialog = (props: {}) => {
                 <li>This breaks the dark mode toggle in the top-menu</li>
                 <li>Added current git hash to copyright footer text as build hash identifier</li>
             </ul>
-
             <h2 className={classes.header}>Version 1.3.2</h2>
             <ul>
                 <li>Reverted version 1.3.1</li>
@@ -212,7 +273,7 @@ export const ChangelogDialog = (props: {}) => {
             <h2 className={classes.header}>Version 0.3.0</h2>
             <ul className={classes.list}>
                 <li>
-                    Added support for <a href="https://github.com/asivery/remote-netmd-server">Remote NetMD</a>
+                    Added support for <Link href="https://github.com/asivery/remote-netmd-server">Remote NetMD</Link>
                 </li>
                 <li>Fixed numerous bugs regarding NetMD upload and Sony LAMs</li>
                 <li>Added support for downloading tracks via NetMD from the Sony MZ-RH1 recorder</li>
@@ -225,8 +286,8 @@ export const ChangelogDialog = (props: {}) => {
                 <li>Added a basic self-test</li>
                 <li>
                     Added full support for Sony LAM-Series devices (Issue{' '}
-                    <a href="https://github.com/cybercase/webminidisc/issues/29">#29</a>,{' '}
-                    <a href="https://github.com/cybercase/webminidisc/issues/60">#60</a>)
+                    <Link href="https://github.com/cybercase/webminidisc/issues/29">#29</Link>,{' '}
+                    <Link href="https://github.com/cybercase/webminidisc/issues/60">#60</Link>)
                 </li>
                 <li>
                     Overhauled the convert dialog
@@ -235,7 +296,7 @@ export const ChangelogDialog = (props: {}) => {
                         <li>Added a live preview of how the tracks are going to be titled when selecting different formats</li>
                         <li>
                             Added a warning about using too many characters (Issue{' '}
-                            <a href="https://github.com/cybercase/webminidisc/issues/66">#66</a>)
+                            <Link href="https://github.com/cybercase/webminidisc/issues/66">#66</Link>)
                         </li>
                     </ul>
                 </li>

@@ -1,11 +1,11 @@
 import React, { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import clsx from 'clsx';
 
-import PlayArrowIcon from '@material-ui/icons/PlayArrow';
-import StopIcon from '@material-ui/icons/Stop';
-import SkipNextIcon from '@material-ui/icons/SkipNext';
-import SkipPreviousIcon from '@material-ui/icons/SkipPrevious';
-import PauseIcon from '@material-ui/icons/Pause';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
+import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
+import PauseIcon from '@mui/icons-material/Pause';
 
 import IconButton from '@material-ui/core/IconButton';
 import Box from '@material-ui/core/Box';
@@ -20,7 +20,7 @@ import { ReactComponent as MDIcon1 } from '../images/md1.svg';
 import { ReactComponent as MDIcon2 } from '../images/md2.svg';
 import { ReactComponent as MDIcon3 } from '../images/md3.svg';
 import { W95Controls } from './win95/controls';
-import { Capability } from '../services/netmd';
+import { Capability } from '../services/interfaces/netmd';
 
 const frames = [MDIcon0, MDIcon1, MDIcon2, MDIcon3];
 

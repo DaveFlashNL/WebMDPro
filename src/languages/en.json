@@ -1,5 +1,68 @@
 {
-    "welcometsx": {
+    "about": {
+        "about-dialog.tsx": "About Web MiniDisc Pro",
+        "uses": "uses",
+        "aufil": "to read audio files"
+    },
+    "app": {
+        "app.tsx": "app"
+    },
+    "changelog-dialog": {
+        "changelog-dialog.tsx": "Wijzigingen in Web Minidisc Pro"
+    },
+    "controls": {
+        "controls.tsx": "bedieningen"
+    },
+    "convert-dialog": {
+        "convert-dialog.tsx": "Converteren scherm"
+    },
+    "dump-dialog": {
+        "dump-dialog.tsx": "dumpen"
+    },
+    "error-dialog": {
+        "error-dialog.tsx": "foutenscherm"
+    },
+    "line-in-helpers": {
+        "line-in-helpers.tsx": "Lijn-in hulp"
+    },
+    "main-rows": {
+        "main-rows.tsx": "Hoofdrijen"
+    },
+    "main": {
+        "main.tsx": "Hoofdscherm"
+    },
+    "other-device-dialog": {
+        "other-device-dialog.tsx": "andere apparaten scherm"
+    },
+    "panic-dialog": {
+        "panic-dialog.tsx": "Paniekscherm"
+    },
+    "record-dialog": {
+        "record-dialog.tsx": "Opnamescherm"
+    },
+    "rename-dialog": {
+        "rename-dialog.tsx": "Metadatascherm"
+    },
+    "settings-dialog": {
+        "settings-dialog.tsx": "Instellingenscherm"
+    },
+    "song-recognition-dialog": {
+        "song-recognition-dialog.tsx": "Shazamscherm"
+    },
+    "song-recognition-progress-dialog": {
+        "song-recognition-progress-dialog.tsx": "Shazamvoortgangsscherm"
+    },
+    "split-button": {
+        "split-button.tsx": "Tracksplitsen knop"
+    },
+    "topmenu": {
+        "topmenu.tsx": "Hoofdmenu"
+    },
+    "upload-dialog": {
+        "upload-dialog.tsx": "Uploadscherm"
+    },
+    "welcome": {
+        "welcome.tsx": "Welcomescreen",
         "cstmdev": "Add Custom Device",
         "delete": "delete",
         "costdev": "Add Custom Device",
@@ -9,19 +72,16 @@
         "learnwhy": "Learn Why",
         "trychrome": "Try using",
         "instead": "instead",
+        "supfaq": "Support and FAQ",
         "whyspprt": "Web MiniDisc Pro requires a browser that supports both",
         "and": "and",
         "listreasonA": "WebUSB is needed to control the NetMD device via the USB connection to your computer.",
         "listreasonB": "WebAssembly is used to convert the music to a MiniDisc compatible format."
     },
-    "maintsx": {
-        "test": "test"
-    },
     "cstmdhdr": "Add Custom Device",
     "condev": "Connected to: ",
     "loadin": "loading...",
     "welcometag": "Brings NetMD-devices to the Web",
-    "supfaq": "Support and FAQ",
     "connbtn": "Connect",
     "remoteconn": "Connect to",
     "remotemsg": "Connect to a remote NetMD device with the help of ",
@@ -37,8 +97,8 @@
     "frname": "Friendly Name",
     "srvaddr": "Server Address",
     "copyright": {
-        "txt1": " (original), this fork by ",
-        "txt2": "me",
+        "txt1": " (original),  ",
+        "txt2": ", this fork by ",
         "txt3": ", proudly hosted on",
         "txt4": " in the EU. All rights reserved. © "
     }

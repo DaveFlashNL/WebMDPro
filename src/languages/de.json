@@ -1,27 +1,87 @@
 {
-    "welcometsx": {
+    "about": {
+        "about-dialog.tsx": "Uber Web MiniDisc Pro",
+        "uses": "verwendet",
+        "aufil": "um Audiodateien zu lesen"
+    },
+    "app": {
+        "app.tsx": "app"
+    },
+    "changelog-dialog": {
+        "changelog-dialog.tsx": "Wijzigingen in Web Minidisc Pro"
+    },
+    "controls": {
+        "controls.tsx": "bedienunngen"
+    },
+    "convert-dialog": {
+        "convert-dialog.tsx": "Converteren scherm"
+    },
+    "dump-dialog": {
+        "dump-dialog.tsx": "dumpen"
+    },
+    "error-dialog": {
+        "error-dialog.tsx": "foutenscherm"
+    },
+    "line-in-helpers": {
+        "line-in-helpers.tsx": "Lijn-in hulp"
+    },
+    "main-rows": {
+        "main-rows.tsx": "Hoofdrijen"
+    },
+    "main": {
+        "main.tsx": "Hoofdscherm"
+    },
+    "other-device-dialog": {
+        "other-device-dialog.tsx": "andere apparaten scherm"
+    },
+    "panic-dialog": {
+        "panic-dialog.tsx": "Paniekscherm"
+    },
+    "record-dialog": {
+        "record-dialog.tsx": "Opnamescherm"
+    },
+    "rename-dialog": {
+        "rename-dialog.tsx": "Metadatascherm"
+    },
+    "settings-dialog": {
+        "settings-dialog.tsx": "Instellingenscherm"
+    },
+    "song-recognition-dialog": {
+        "song-recognition-dialog.tsx": "Shazamscherm"
+    },
+    "song-recognition-progress-dialog": {
+        "song-recognition-progress-dialog.tsx": "Shazamvoortgangsscherm"
+    },
+    "split-button": {
+        "split-button.tsx": "Tracksplitsen knop"
+    },
+    "topmenu": {
+        "topmenu.tsx": "Hoofdmenu"
+    },
+    "upload-dialog": {
+        "upload-dialog.tsx": "Uploadscherm"
+    },
+    "welcome": {
+        "welcome.tsx": "Wilkomeschirm",
         "cstmdev": "Gerät hinzufügen",
         "delete": "delete",
-        "costdev": "Add Custom Device",
+        "costdev": "Benutzer Gerät hinzufügen",
         "tagline": "Bringt NetMD-Geräte ins web",
         "pressconn": "Drücken um ein NetMD-Gerät zu verbinden",
         "browser": "This Web browser is not supported",
         "learnwhy": "Learn Why",
         "trychrome": "Try using",
         "instead": "instead",
+        "supfaq": "Support und FAQ (Englisch)",
         "whyspprt": "Web MiniDisc Pro requires a browser that supports both",
         "and": "and",
         "listreasonA": "WebUSB is needed to control the NetMD device via the USB connection to your computer.",
         "listreasonB": "WebAssembly is used to convert the music to a MiniDisc compatible format."
     },
-    "maintsx": {
-        "test": "test"
-    },
     "cstmdhdr": "Benutzerdefiniertes Gerät hinzufügen",
     "condev": "Verbundenes Gerät:",
     "loadin": "Wird geladen...",
     "welcometag": "Bringt NetMD-Geräte ins web",
-    "supfaq": "Support und FAQ (Englisch)",
     "connbtn": "Verbinden",
     "remoteconn": "Verbinden mit",
     "remotemsg": "Fernverbindung zu einem NetMD-Gerät über: ",
@@ -37,8 +97,8 @@
     "frname": "Freundlicher Name",
     "srvaddr": "Server-adresse",
     "copyright": {
-        "txt1": " (Original), diese Gabel durch ",
-        "txt2": "mich",
+        "txt1": " (Original), ",
+        "txt2": ", diese Gabel durch ",
         "txt3": ", stolz gehostet auf",
         "txt4": " in der EU. Alle Rechte vorbehalten. © "
     }

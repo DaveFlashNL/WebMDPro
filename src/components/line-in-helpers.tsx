@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Capability } from '../services/netmd';
+import { Capability } from '../services/interfaces/netmd';
 import { useShallowEqualSelector } from '../utils';
 
 import FormHelperText from '@material-ui/core/FormHelperText';
@@ -53,8 +53,8 @@ export function LineInDeviceSelect({ handleChange, inputDeviceId }: { handleChan
         <React.Fragment>
             {deviceCapabilities.includes(Capability.factoryMode) && (
                 <Typography component="h4" variant="body2" className={classes.factoryModeNotice}>
-                    It looks like this device supports NetMD exploits, so you can enjoy RH1-style minidisc ripping. Please
-                    check the three-dots menu at the top right to enable it or enter homebrew mode for more information.
+                    It looks like this player supports exploits, so you might be capable of enjoying RH1-style minidisc ripping. Please
+                    check the three-dots menu at the top right to enable it or enter the full homebrew mode for more information.
                 </Typography>
             )}
 

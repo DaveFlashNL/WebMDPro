@@ -16,7 +16,7 @@ import factoryFragmentModeEditDialog from './factory/factory-fragment-mode-edit-
 import factoryProgressDialog from './factory/factory-progress-dialog-feature';
 import factoryNoticeDialog from './factory/factory-notice-dialog-feature';
 import factoryEditOtherValuesDialog from './factory/factory-edit-other-values-dialog-feature';
-import encoderSetupDialog from './encoder-setup-dialog-feature';
+import factoryBadSectorDialog from './factory/factory-bad-sector-dialog-feature';
 
 import main from './main-feature';
 import { batchActions } from 'redux-batched-actions';
@@ -48,14 +48,14 @@ let reducer = combineReducers({
     factoryProgressDialog,
     factoryNoticeDialog,
     factoryEditOtherValuesDialog,
-    encoderSetupDialog,
+    factoryBadSectorDialog,
     appState,
     main,
 });
 
 const resetStateAction = appActions.setMainView.toString();
 const resetStatePayoload = 'WELCOME';
-const resetStateReducer: typeof reducer = function (...args) {
+const resetStateReducer: typeof reducer = function(...args) {
     const action = args[1];
     if (action.type === resetStateAction && action.payload === resetStatePayoload) {
         return {
