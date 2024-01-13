@@ -41,7 +41,7 @@ const useStyles = makeStyles(theme => ({
         display: 'none',
     },
     trackRow: {
-        userSelect: 'none',
+        //userSelect: 'none',
         '&:hover': {
             '& $playButtonInTrackList': {
                 display: 'inline-flex',
@@ -116,7 +116,7 @@ const useStyles = makeStyles(theme => ({
     },
     groupFolderIcon: {},
     groupHeadRow: {
-        userSelect: 'none',
+        //userSelect: 'none',
         '&:hover': {
             '& $deleteGroupButton': {
                 display: 'inline-flex',
@@ -184,7 +184,9 @@ export function TrackRow({
                 [classes.trackRow]: isCapable(Capability.playbackControl),
                 [classes.inGroupTrackRow]: inGroup,
                 [classes.currentTrackRow]: isPlayingOrPaused,
-            })}
+            })
+
+            }
         >
             <TableCell className={classes.dragHandle} {...draggableProvided.dragHandleProps} onClick={event => event.stopPropagation()}>
                 <DragIndicator fontSize="small" color="disabled" />

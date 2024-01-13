@@ -2,35 +2,17 @@ import React, { useEffect, useCallback, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import clsx from 'clsx';
 import { useDropzone } from 'react-dropzone';
-import {
-    DragDropContext,
-    Draggable,
-    DraggableProvided,
-    DropResult,
-    ResponderProvided,
-    Droppable,
-    DroppableProvided,
-    DroppableStateSnapshot,
-} from 'react-beautiful-dnd';
+import { DragDropContext, Draggable, DraggableProvided, DropResult, ResponderProvided, Droppable, DroppableProvided, DroppableStateSnapshot } from 'react-beautiful-dnd';
 import { listContent, deleteTracks, moveTrack, groupTracks, deleteGroups, dragDropTrack, ejectDisc, flushDevice } from '../redux/actions';
 import { actions as renameDialogActions, RenameType } from '../redux/rename-dialog-feature';
 import { actions as convertDialogActions } from '../redux/convert-dialog-feature';
 import { actions as dumpDialogActions } from '../redux/dump-dialog-feature';
 import { actions as appStateActions } from '../redux/app-feature';
 
-import { DeviceStatus } from 'netmd-js';
+import { DeviceStatus, formatTimeFromFrames } from 'netmd-js';
 import { control } from '../redux/actions';
 
-import {
-    belowDesktop,
-    forAnyDesktop,
-    formatTimeFromSeconds,
-    getGroupedTracks,
-    getSortedTracks,
-    isSequential,
-    useShallowEqualSelector,
-    acceptedTypes
-} from '../utils';
+import { belowDesktop, forAnyDesktop, formatTimeFromSeconds, getGroupedTracks, getSortedTracks, isSequential, useShallowEqualSelector, acceptedTypes } from '../utils';
 
 import { lighten, makeStyles } from '@material-ui/core/styles';
 import { alpha } from '@material-ui/core/styles/colorManipulator';
@@ -44,6 +26,9 @@ import Backdrop from '@material-ui/core/Backdrop';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import EjectIcon from '@mui/icons-material/Eject';
 import DoneIcon from '@mui/icons-material/Done';
+import PlayCircleIcon from '@mui/icons-material/PlayCircleOutlineOutlined';
+import { ReactComponent as MDLPIcon } from '../images/MDLP.svg';
+import { ReactComponent as MDIcon } from '../images/minidisclogo.svg';
 
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -55,6 +40,7 @@ import LinearProgress from '@material-ui/core/LinearProgress';
 import IconButton from '@material-ui/core/IconButton';
 import Toolbar from '@material-ui/core/Toolbar';
 import Tooltip from '@material-ui/core/Tooltip';
+import * as BadgeImpl from '@material-ui/core/Badge/Badge';
 import { batchActions } from 'redux-batched-actions';
 
 import { GroupRow, leftInNondefaultCodecs, TrackRow } from './main-rows';
@@ -81,6 +67,10 @@ import { SettingsDialog } from './settings-dialog';
 import { FactoryModeBadSectorDialog } from './factory/factory-bad-sector-dialog';
 import { DiscProtectedDialog } from './disc-protected-dialog';
 
+import { isElectron } from '../redux/main-feature';
+import { lproj } from '../languages';
+const txt = lproj.main;
+
 const useStyles = makeStyles(theme => ({
     add: {
         position: 'absolute',
@@ -93,25 +83,29 @@ const useStyles = makeStyles(theme => ({
     main: {
         overflowY: 'auto',
         flex: '1 1 auto',
-        marginBottom: theme.spacing(3),
+        marginBottom: theme.spacing(5),
         outline: 'none',
-        marginLeft: theme.spacing(-1),
-        marginRight: theme.spacing(-1),
+        marginLeft: theme.spacing(0),
+        marginRight: theme.spacing(0),
         [forAnyDesktop(theme)]: {
-            marginLeft: theme.spacing(-2),
-            marginRight: theme.spacing(-2),
+            marginLeft: theme.spacing(0),
+            marginRight: theme.spacing(0),
         },
     },
     toolbar: {
-        marginTop: theme.spacing(2),
-        marginLeft: theme.spacing(-2),
-        marginRight: theme.spacing(-2),
+        marginTop: theme.spacing(0),
+        marginLeft: theme.spacing(2),
+        marginRight: theme.spacing(2),
         [theme.breakpoints.up(600 + theme.spacing(2) * 2)]: {
-            marginLeft: theme.spacing(-3),
-            marginRight: theme.spacing(-3),
+            marginLeft: theme.spacing(0),
+            marginRight: theme.spacing(0),
         },
     },
     toolbarLabel: {
+        flex: '1 1 100%',
+        marginLeft: '-24px',
+    },
+    toolbarLabelCount: {
         flex: '1 1 100%',
     },
     toolbarHighlight:
@@ -127,6 +121,12 @@ const useStyles = makeStyles(theme => ({
     headBox: {
         display: 'flex',
         justifyContent: 'space-between',
+    },
+    headTtl: {
+        display: 'flex',
+        "span": {
+            display: 'inline',
+        },
     },
     spacing: {
         marginTop: theme.spacing(1),
@@ -145,7 +145,7 @@ const useStyles = makeStyles(theme => ({
         textDecorationStyle: 'dotted',
     },
     hoveringOverGroup: {
-        backgroundColor: `${alpha(theme.palette.secondary.dark, 0.4)}`,
+        backgroundColor: `${alpha('#8b2881', 0.4)}`,
     },
     dragHandleEmpty: {
         width: 20,
@@ -154,6 +154,82 @@ const useStyles = makeStyles(theme => ({
     fixedTable: {
         tableLayout: 'fixed',
     },
+    format: {
+        ...(BadgeImpl as any).styles(theme).badge,
+        ...(BadgeImpl as any).styles(theme).colorPrimary,
+        position: 'static',
+        display: 'inline-flex',
+        border: `2px solid ${theme.palette.background.paper}`,
+        padding: '0 2px',
+        verticalAlign: 'middle',
+        width: theme.spacing(4.5),
+        textDecoration: 'underline',
+        textDecorationStyle: 'dotted',
+    },
+    MDlogo: {
+        verticalAlign: 'middle',
+        textAlign: 'center',
+        maxWidth: '27px',
+        maxHeight: '25.5px',
+    },
+    MDLP: {
+        cellSpacing: '2px',
+        borderCollapse: 'collapse',
+        borderSpacing: '2px',
+
+    },
+    MDLPTable: {
+        marginLeft: '-1px',
+        cellSpacing: '2px',
+        borderCollapse: 'collapse',
+        borderSpacing: '2px',
+        "td": {
+            padding: '2px',
+        },
+        "tr": {
+            padding: '2px',
+        },
+    },
+    MDLPbtn: {
+        display: 'inline-flex',
+        verticalAlign: 'middle',
+        textAlign: 'center',
+        color: "#000",
+        cursor: 'pointer',
+    },
+    MDLPHover:
+        theme.palette.type === 'light'
+            ? {
+                "& :hover": {
+                    color: '#3f51b5',
+                }
+            } : {
+                "& :hover": {
+                    color: '#2196f3',
+                }
+            },
+    MDLPopen: {
+        transform: 'rotate(-90deg)',
+    },
+    MDLPclosed: {
+        transform: 'rotate(90deg)',
+    },
+    MDLabelName: {
+        fontWeight: 'bold',
+    },
+    aligntest: {
+        alignContent: 'right',
+    },
+    themeFill:
+        theme.palette.type === 'light'
+            ? {
+                color: '#000',
+                fill: '#000'
+            } : {
+                //light color
+                color: '#FFF',
+                fill: '#FFF'
+            },
 }));
 
 function getTrackStatus(track: Track, deviceStatus: DeviceStatus | null): 'playing' | 'paused' | 'none' {
@@ -185,6 +261,7 @@ export const Main = (props: {}) => {
     const [uploadedFiles, setUploadedFiles] = React.useState<File[]>([]);
     const [lastClicked, setLastClicked] = useState(-1);
     const [moveMenuAnchorEl, setMoveMenuAnchorEl] = React.useState<null | HTMLElement>(null);
+    const [hiddenMDLPModes, setActive] = useState(true);
 
     const isCapable = useCallback((capability: Capability) => deviceCapabilities.includes(capability), [deviceCapabilities]);
 
@@ -457,6 +534,13 @@ export const Main = (props: {}) => {
     const selectedGroupsCount = selectedGroups.length;
     const usesHimdTracks = isCapable(Capability.himdTitles);
 
+    /*
+    
+    ## const isCapable = (capability: Capability) => deviceCapabilities.includes(capability);
+    old code, isCapable instance already called for in this version. retain for trouble shooting
+    
+    */
+
     if (vintageMode) {
         const p = {
             disc,
@@ -495,13 +579,57 @@ export const Main = (props: {}) => {
         };
         return <W95Main {...p} />;
     }
+    const isMac = () => {
+        if (navigator.userAgent.indexOf('Mac') >= 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    const hideMDLP = () => {
+        let lp24 = document.getElementById("LP24");
+        lp24?.toggleAttribute("hidden");
+        setActive(!hiddenMDLPModes);
+    }
+
+    const convertToHumanTime = (e: number) => {
+        let inputTime = e;
+        let hours = Math.floor(inputTime / 3600);
+        inputTime %= 3600;
+        let minutes = Math.floor(inputTime / 60);
+        let seconds = inputTime % 60;
+
+        return [hours, minutes, seconds]
+            .map(v => v < 10 ? "0" + v : v)
+            /* uncomment to remove if no hours remain to beautify time display*/
+            .filter((v, i) => v !== "00" || i > 0)
+            .join(":")
+    }
+    const convertTimeToDiscType = (e: number) => {
+        let HHMMSSToLabel = convertToHumanTime(e - 1)
+        if (HHMMSSToLabel === "01:20:59") {
+            return "MD80";
+        } else if (HHMMSSToLabel === "01:14:59") {
+            return "MD74";
+        } else if (HHMMSSToLabel === "01:00:59") {
+            return "MD60";
+        } else {
+            return HHMMSSToLabel;
+        }
+    }
 
     return (
         <React.Fragment>
             <Box className={classes.headBox}>
-                <Typography component="h1" variant="h4">
-                    {deviceName || `Loading...`}
-                </Typography>
+                {isElectron() ? (
+                    <Typography component="h1" variant="h6" className={classes.headTtl}>
+                        {lproj.condev}{deviceName || lproj.loadin}
+                    </Typography>
+                ) : (
+                    <Typography component="h1" variant="h4">
+                        Web Minidisc Pro
+                    </Typography>
+                )}
                 <span>
                     {isCapable(Capability.discEject) && (
                         <IconButton
@@ -522,23 +650,83 @@ export const Main = (props: {}) => {
                             </IconButton>
                         </Tooltip>
                     )}
-
                     <TopMenu tracksSelected={selected} />
                 </span>
             </Box>
+            {isElectron() ? (
+                isMac() ? (null) : (<Typography component="h1" variant="h6" className={classes.headTtl}>nbsp;</Typography>)
+            ) : (
+                <Typography component="h1" variant="h6" className={classes.headTtl}>
+                    {lproj.condev}{deviceName || lproj.loadin}
+                </Typography>
+            )}
+            <span className={classes.aligntest}>
+                <Typography component="h2" variant="body2">
+                    {disc !== null ? (
+                        <React.Fragment>
+                            <span>{lproj.timemsg}{` `}<span className={classes.MDLabelName}>{`${convertTimeToDiscType(disc.total)}:`}</span></span><br />
+                            <span style={{ textAlign: 'right', alignContent: 'right' }}>{`${convertToHumanTime(disc.left - 1)} `}{lproj.of}{` `}
+                                <Tooltip
+                                    title={lproj.mdlpinf
+                                        //<span data-langkey="mdlpinf">This badge denotes both the the available space for a given recording mode as well as the mode used for the existing tracks on the disc listed below.</span>
+                                    }
+                                    arrow
+                                >
+                                    <div className={classes.format}>SP</div>
+                                </Tooltip>&nbsp;
+                                <MDIcon className={classes.MDlogo + ' ' + classes.themeFill} />&nbsp;
+                                <Tooltip
+                                    title={
+                                        <span>{hiddenMDLPModes ? 'Hide' : 'Show'}{` MDLP-recording time.`}</span>
+                                    }
+                                    arrow
+                                >
+                                    <span className={classes.MDLPbtn + ' ' + classes.MDLPHover + ' ' + classes.themeFill} aria-label="MDLP-modes" onClick={hideMDLP}>{hiddenMDLPModes ? <PlayCircleIcon className={classes.MDLPopen} /> : <PlayCircleIcon className={classes.MDLPclosed} />}</span>
+                                </Tooltip>
+                            </span><br />
+                            <span id="LP24" hidden={false}>
+                                <table className={classes.MDLPTable}><thead><tr><td>{`${convertToHumanTime(disc.left * 2 - 2)} `}{lproj.of}{` `}
+                                    <Tooltip
+                                        title={
+                                            <span>{lproj.mdlp2}</span>
+                                            //<span>{`LP2 iss part of the MDLP standard "Long Play" and doubles the available recording time, but uses a newer codec.`}</span>
+                                        }
+                                        arrow
+                                    >
+                                        <div className={classes.format}>LP2</div>
+                                    </Tooltip>
+                                </td><td rowSpan={2}><Tooltip
+                                    title={<span>{lproj.mdlp}</span>
+                                        //<span>{`Minidisc "Long Play", introduced in September 2000, is a new encoding method for audio on MiniDisc's that offers two modes: one gives 160 minutes stereo ("LP2"), the second gives 320 minutes stereo ("LP4"). Only players labelled with the same mark such as this will playback tracks encoded in MDLP-modes, on other plays they plaback as silence.`}</span>
+                                    }
+                                    arrow
+                                >
+                                    <span className={classes.themeFill}><MDLPIcon width="50px" height="12px" /></span>
+                                </Tooltip></td></tr><tr><td>{`${convertToHumanTime(disc.left * 4 - 4)}`} {lproj.of}{` `}
+                                    <Tooltip
+                                        title={<span>{lproj.mdlp4}</span>
+                                            //<span>{`LP4 (also part of MDLP) quadruples the available recording time. For both LP2 and LP4 however, you need an MDLP-capable unit to play such tracks.`}</span>
+                                        }
+                                        arrow
+                                    >
+                                        <div className={classes.format}>LP4</div>
+                                    </Tooltip>
+                                </td></tr></thead></table>
+                            </span>
+                            <span style={{ paddingRight: '120px', }}>{hiddenMDLPModes ? <small><sup>(hh:mm:ss)</sup></small> : <small><br /><sup>(hh:mm:ss)</sup></small>}</span>
+                            <hr style={{ height: '4px', lineHeight: '4px', marginTop: '-2px', visibility: 'hidden' }} />
+
+
+                        </React.Fragment>
+                    ) : (
+                        <span>No disc loaded</span>
+                    )
+                    }
+                </Typography>
+            </span>
             <Typography component="h2" variant="body2">
                 {disc !== null ? (
                     <React.Fragment>
-                        <span>{`${formatTimeFromSeconds(disc.left)} left of ${formatTimeFromSeconds(disc.total)} `}</span>
-                        <Tooltip
-                            title={
-                                leftInNondefaultCodecs(disc.left)
-                            }
-                            arrow
-                        >
-                            <span className={classes.remainingTimeTooltip}>SP Mode</span>
-                        </Tooltip>
-                        <div className={classes.spacing} />
                         <LinearProgress
                             variant="determinate"
                             color={((disc.total - disc.left) * 100) / disc.total >= 90 ? 'secondary' : 'primary'}
@@ -546,8 +734,9 @@ export const Main = (props: {}) => {
                         />
                     </React.Fragment>
                 ) : (
-                    `No disc loaded`
-                )}
+                    <span></span>
+                )
+                }
             </Typography>
             <Toolbar
                 className={clsx(classes.toolbar, {
@@ -564,7 +753,7 @@ export const Main = (props: {}) => {
                     />
                 ) : null}
                 {selectedCount > 0 || selectedGroupsCount > 0 ? (
-                    <Typography className={classes.toolbarLabel} color="inherit" variant="subtitle1">
+                    <Typography className={classes.toolbarLabelCount} color="inherit" variant="subtitle1">
                         {selectedCount || selectedGroupsCount} selected
                     </Typography>
                 ) : (
@@ -575,7 +764,7 @@ export const Main = (props: {}) => {
                 )}
                 {selectedCount > 0 ? (
                     <React.Fragment>
-                        <Tooltip title="Record from MD">
+                        <Tooltip title={isCapable(Capability.trackDownload) || factoryModeRippingInMainUi ? 'Download from MD' : 'Record from MD'}>
                             <Button
                                 aria-label={isCapable(Capability.trackDownload) || factoryModeRippingInMainUi ? 'Download' : 'Record'}
                                 onClick={handleShowDumpDialog}
@@ -652,97 +841,101 @@ export const Main = (props: {}) => {
                     </Tooltip>
                 ) : null}
             </Toolbar>
-            {isCapable(Capability.contentList) ? (
-                <Box className={classes.main} {...getRootProps()} id="main">
-                    <input {...getInputProps()} />
-                    <Table size="small" className={classes.fixedTable}>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell className={classes.dragHandleEmpty}></TableCell>
-                                <TableCell className={classes.indexCell}>#</TableCell>
-                                <TableCell>Title</TableCell>
-                                {usesHimdTracks && (
-                                    <>
-                                        <TableCell>Album</TableCell>
-                                        <TableCell>Artist</TableCell>
-                                    </>
-                                )}
-                                <TableCell align="right">Duration</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <DragDropContext onDragEnd={handleDrop}>
-                            <TableBody>
-                                {groupedTracks.map((group, index) => (
-                                    <TableRow key={`${index}`}>
-                                        <TableCell colSpan={4 + (usesHimdTracks ? 2 : 0)} style={{ padding: '0' }}>
-                                            <Table size="small" className={classes.fixedTable}>
-                                                <Droppable droppableId={`${index}`} key={`${index}`}>
-                                                    {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => (
-                                                        <TableBody
-                                                            {...provided.droppableProps}
-                                                            ref={provided.innerRef}
-                                                            className={clsx({ [classes.hoveringOverGroup]: snapshot.isDraggingOver })}
-                                                        >
-                                                            {group.title !== null && (
-                                                                <GroupRow
-                                                                    usesHimdTracks={usesHimdTracks}
-                                                                    group={group}
-                                                                    onRename={handleRenameGroup}
-                                                                    onDelete={handleDeleteGroup}
-                                                                    isSelected={selectedGroups.includes(group.index)}
-                                                                    isCapable={isCapable}
-                                                                    onSelect={handleSelectGroupClick}
-                                                                />
-                                                            )}
-                                                            {group.title === null && group.tracks.length === 0 && (
-                                                                <TableRow style={{ height: '1px' }} />
-                                                            )}
-                                                            {group.tracks.map((t, tidx) => (
-                                                                <Draggable
-                                                                    draggableId={`${group.index}-${t.index}`}
-                                                                    key={`t-${t.index}`}
-                                                                    index={tidx}
-                                                                    isDragDisabled={!isCapable(Capability.metadataEdit)}
-                                                                >
-                                                                    {(provided: DraggableProvided) => (
-                                                                        <TrackRow
-                                                                            track={t}
-                                                                            isHimdTrack={usesHimdTracks}
-                                                                            draggableProvided={provided}
-                                                                            inGroup={group.title !== null}
-                                                                            isSelected={selected.includes(t.index)}
-                                                                            trackStatus={getTrackStatus(t, deviceStatus)}
-                                                                            onSelect={handleSelectTrackClick}
-                                                                            onRename={handleRenameTrack}
-                                                                            onTogglePlayPause={handleTogglePlayPauseTrack}
-                                                                            isCapable={isCapable}
-                                                                        />
-                                                                    )}
-                                                                </Draggable>
-                                                            ))}
-                                                            {provided.placeholder}
-                                                        </TableBody>
-                                                    )}
-                                                </Droppable>
-                                            </Table>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </DragDropContext>
-                    </Table>
-                    {isDragActive && isCapable(Capability.trackUpload) ? (
-                        <Backdrop className={classes.backdrop} open={isDragActive}>
-                            Drop music to upload to MD
-                        </Backdrop>
-                    ) : null}
-                </Box>
-            ) : null}
-            {isCapable(Capability.trackUpload) ? (
-                <Fab color="primary" aria-label="add" className={classes.add} onClick={open}>
-                    <AddIcon />
-                </Fab>
-            ) : null}
+            {
+                isCapable(Capability.contentList) ? (
+                    <Box className={classes.main} {...getRootProps()} id="main">
+                        <input {...getInputProps()} />
+                        <Table size="small" className={classes.fixedTable}>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell className={classes.dragHandleEmpty}></TableCell>
+                                    <TableCell className={classes.indexCell}>#</TableCell>
+                                    <TableCell>Title</TableCell>
+                                    {usesHimdTracks && (
+                                        <>
+                                            <TableCell>Album</TableCell>
+                                            <TableCell>Artist</TableCell>
+                                        </>
+                                    )}
+                                    <TableCell align="right">Duration</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <DragDropContext onDragEnd={handleDrop}>
+                                <TableBody>
+                                    {groupedTracks.map((group, index) => (
+                                        <TableRow key={`${index}`}>
+                                            <TableCell colSpan={4 + (usesHimdTracks ? 2 : 0)} style={{ padding: '0' }}>
+                                                <Table size="small" className={classes.fixedTable}>
+                                                    <Droppable droppableId={`${index}`} key={`${index}`}>
+                                                        {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => (
+                                                            <TableBody
+                                                                {...provided.droppableProps}
+                                                                ref={provided.innerRef}
+                                                                className={clsx({ [classes.hoveringOverGroup]: snapshot.isDraggingOver })}
+                                                            >
+                                                                {group.title !== null && (
+                                                                    <GroupRow
+                                                                        usesHimdTracks={usesHimdTracks}
+                                                                        group={group}
+                                                                        onRename={handleRenameGroup}
+                                                                        onDelete={handleDeleteGroup}
+                                                                        isSelected={selectedGroups.includes(group.index)}
+                                                                        isCapable={isCapable}
+                                                                        onSelect={handleSelectGroupClick}
+                                                                    />
+                                                                )}
+                                                                {group.title === null && group.tracks.length === 0 && (
+                                                                    <TableRow style={{ height: '1px' }} />
+                                                                )}
+                                                                {group.tracks.map((t, tidx) => (
+                                                                    <Draggable
+                                                                        draggableId={`${group.index}-${t.index}`}
+                                                                        key={`t-${t.index}`}
+                                                                        index={tidx}
+                                                                        isDragDisabled={!isCapable(Capability.metadataEdit)}
+                                                                    >
+                                                                        {(provided: DraggableProvided) => (
+                                                                            <TrackRow
+                                                                                track={t}
+                                                                                isHimdTrack={usesHimdTracks}
+                                                                                draggableProvided={provided}
+                                                                                inGroup={group.title !== null}
+                                                                                isSelected={selected.includes(t.index)}
+                                                                                trackStatus={getTrackStatus(t, deviceStatus)}
+                                                                                onSelect={handleSelectTrackClick}
+                                                                                onRename={handleRenameTrack}
+                                                                                onTogglePlayPause={handleTogglePlayPauseTrack}
+                                                                                isCapable={isCapable}
+                                                                            />
+                                                                        )}
+                                                                    </Draggable>
+                                                                ))}
+                                                                {provided.placeholder}
+                                                            </TableBody>
+                                                        )}
+                                                    </Droppable>
+                                                </Table>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </DragDropContext>
+                        </Table>
+                        {isDragActive && isCapable(Capability.trackUpload) ? (
+                            <Backdrop className={classes.backdrop} open={isDragActive}>
+                                Drop music to upload to MD
+                            </Backdrop>
+                        ) : null}
+                    </Box>
+                ) : null
+            }
+            {
+                isCapable(Capability.trackUpload) ? (
+                    <Fab color="primary" aria-label="add" className={classes.add} onClick={open}>
+                        <AddIcon />
+                    </Fab>
+                ) : null
+            }
 
             <DiscProtectedDialog />
             <UploadDialog />
@@ -764,6 +957,6 @@ export const Main = (props: {}) => {
             <ChangelogDialog />
             <SettingsDialog />
             <PanicDialog />
-        </React.Fragment>
+        </React.Fragment >
     );
 };

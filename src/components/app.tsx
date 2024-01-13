@@ -122,12 +122,18 @@ const darkTheme = createTheme({
             dark: '#0069c0',
             contrastText: '#fff',
         },
+        secondary: {
+            main: '#7d83bda0',
+        }
     },
 });
 
 const lightTheme = createTheme({
     palette: {
         type: 'light',
+        secondary: {
+            main: '#3f5ecca0',
+        }
     },
 });
 
