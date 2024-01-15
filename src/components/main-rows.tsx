@@ -116,7 +116,7 @@ const useStyles = makeStyles(theme => ({
     },
     groupFolderIcon: {},
     groupHeadRow: {
-        //userSelect: 'none',
+        userSelect: 'none',
         '&:hover': {
             '& $deleteGroupButton': {
                 display: 'inline-flex',
