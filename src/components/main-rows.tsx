@@ -65,6 +65,7 @@ const useStyles = makeStyles(theme => ({
         border: `2px solid ${theme.palette.background.paper}`,
         padding: '0 4px',
         verticalAlign: 'middle',
+        userSelect: 'none',
         width: theme.spacing(4.5),
         marginRight: theme.spacing(0.5),
     },
