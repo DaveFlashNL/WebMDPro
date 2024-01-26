@@ -45,7 +45,8 @@
     "styled-components": "^5.2.1",
     "typescript": "^4.1.3",
     "worker-loader": "^2.0.0",
-    "numjs": "nicolaspanel/numjs#pull/125/head"
+    "numjs": "nicolaspanel/numjs#pull/125/head",
+    "sharp": "^0.33.2"
   },
   "homepage": "https://webmd.pro/",
   "scripts": {
