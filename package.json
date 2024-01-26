@@ -44,7 +44,8 @@
     "shazam-api": "^0.1.2",
     "styled-components": "^5.2.1",
     "typescript": "^4.1.3",
-    "worker-loader": "^2.0.0"
+    "worker-loader": "^2.0.0",
+    "numjs": "nicolaspanel/numjs#pull/125/head"
   },
   "homepage": "https://webmd.pro/",
   "scripts": {
@@ -88,5 +89,8 @@
     "async-mutex": "^0.2.6",
     "gh-pages": "^2.2.0",
     "source-map-explorer": "^2.5.3"
+  },
+  "resolutions": {
+    "sharp": "^0.30.7"
   }
 }
