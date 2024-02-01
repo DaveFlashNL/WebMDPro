@@ -28,9 +28,9 @@ export class RemoteAtracExportService extends DefaultFfmpegAudioExportService {
         let encoderFormat: string;
         switch (format.codec) {
             case 'A3+':
-                if (![48, 64, 96, 128, 160, 192, 256, 320, 352].includes(format.bitrate ?? 0)) {
+                /*if (![48, 64, 96, 128, 160, 192, 256, 320, 352].includes(format.bitrate ?? 0)) {
                     throw new Error('Invalid bitrate given to encoder');
-                }
+                }*/
                 encoderFormat = `PLUS${format.bitrate!}`;
                 break;
             case 'AT3':
